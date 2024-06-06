@@ -1,6 +1,10 @@
 # Vision-LSTM (ViL)
 
-[[`Project Page`](https://nx-ai.github.io/vision-lstm)] [[`Paper`](https://arxiv.org/abs/TODO)] [[`Models`](https://github.com/nx-ai/vision-lstm#pre-trained-models)] [[`BibTeX`](https://github.com/nx-ai/vision-lstm#citation)]
+[[`Project Page`](https://nx-ai.github.io/vision-lstm)] 
+[[`Paper`](https://arxiv.org/abs/TODO)] 
+[[`Models`](https://github.com/nx-ai/vision-lstm#pre-trained-models)] 
+[[`Codebase Demo Video`](https://youtu.be/80kc3hscTTg)]
+[[`BibTeX`](https://github.com/nx-ai/vision-lstm#citation)]
 
 Pytorch implementation and pre-trained models of Vision-LSTM (ViL), an adaption of xLSTM to computer vision.
 
@@ -69,6 +73,11 @@ An example of how to use these models can be found in [eval.py](https://github.c
 which evaluates the models on the ImageNet-1K validation set.
 
 Checkpoints for our reimplementation of DeiT-III-T are provided as raw checkpoint [here](https://ml.jku.at/research/vision_lstm/download/).
+
+# Other
+
+The code-base is an improved version of the one used for [MIM-Refiner](https://github.com/ml-jku/MIM-Refiner)
+for which there exists a [demo video](https://youtu.be/80kc3hscTTg) to explain various things.
 
 
 # Citation

@@ -80,3 +80,9 @@ datasets: ...
 model: ...
 trainer: ...
 ```
+
+# Troubleshooting
+
+The code-base is an improved version of the one used for [MIM-Refiner](https://github.com/ml-jku/MIM-Refiner)
+for which there exists a [demo video](https://youtu.be/80kc3hscTTg) which includes parts of this setup.
+So this video might solve your issue with setting up the codebase.
