@@ -14,8 +14,12 @@ def check_single_device_visible(accelerator):
         assert "CUDA_VISIBLE_DEVICES" in os.environ
         assert len(os.environ["CUDA_VISIBLE_DEVICES"].split(",")) == 1, f"{os.environ['CUDA_VISIBLE_DEVICES']}"
         import torch
+        assert torch.cuda.is_available(), f"CUDA not available use --accelerator cpu to run on cpu"
         visible_device_count = torch.cuda.device_count()
-        assert visible_device_count <= 1, "set CUDA_VISIBLE_DEVICES before importing torch"
+        assert visible_device_count <= 1, \
+            f"set CUDA_VISIBLE_DEVICES before importing torch " \
+            f"CUDA_VISIBLE_DEVICES='{os.environ['CUDA_VISIBLE_DEVICES']}' " \
+            f"torch.cuda.device_count={visible_device_count}"
     else:
         raise NotImplementedError
 

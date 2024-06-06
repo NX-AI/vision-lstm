@@ -11,7 +11,6 @@ from ksuit.models import SingleModel
 from ksuit.optim.param_group_modifiers import WeightDecayByNameModifier
 from ksuit.utils.formatting_utils import list_to_string
 from ksuit.utils.param_checking import to_ntuple
-from vislstm.poolings.uniform import Uniform
 
 class VisLSTM(SingleModel):
     def __init__(
@@ -129,24 +128,13 @@ class VisLSTM(SingleModel):
                 head_in_dim = np.prod(self.pooling.get_output_shape(pooling_input_shape))
             else:
                 raise NotImplementedError
-            # TODO backward compatibility preserving -> norm should be before head + flatten should always be used
-            if isinstance(self.pooling, Uniform):
-                self.head = nn.Sequential(
-                    nn.LayerNorm(dim, eps=eps),
-                    nn.Flatten(),
-                    nn.Linear(head_in_dim, self.output_shape[0]),
-                )
-                # following MAE https://github.com/facebookresearch/mae/blob/main/main_finetune.py#L257
-                nn.init.trunc_normal_(self.head[2].weight, std=2e-5)
-                nn.init.zeros_(self.head[2].bias)
-            else:
-                self.head = nn.Sequential(
-                    nn.LayerNorm(head_in_dim, eps=eps),
-                    nn.Linear(head_in_dim, self.output_shape[0]),
-                )
-                # following MAE https://github.com/facebookresearch/mae/blob/main/main_finetune.py#L257
-                nn.init.trunc_normal_(self.head[1].weight, std=2e-5)
-                nn.init.zeros_(self.head[1].bias)
+            self.head = nn.Sequential(
+                nn.LayerNorm(head_in_dim, eps=eps),
+                nn.Linear(head_in_dim, self.output_shape[0]),
+            )
+            # following MAE https://github.com/facebookresearch/mae/blob/main/main_finetune.py#L257
+            nn.init.trunc_normal_(self.head[1].weight, std=2e-5)
+            nn.init.zeros_(self.head[1].bias)
         else:
             raise NotImplementedError
 

@@ -2,17 +2,26 @@
 
 Create a python environment either via the provided 
 [environment.yml](https://github.com/NX-AI/vision-lstm/tree/main/src/environment.yml) file 
-(e.g. via `conda env create -n vil -f src/environment.yml`) 
-or by manually installing the dependencies via pip  
+(e.g. via `conda env create -n vil -f src/environment.yml`). You probably need to adjust the installed 
+torch/torchvision versions as installing via the `environment.yml` sometimes installs the cpu-only version or a wrong 
+cuda version.
 
 ```
-pip install torch==2.2.2+cu121 -f https://download.pytorch.org/whl/torch_stable.html
-pip install torchvision==0.17.2+cu121 -f https://download.pytorch.org/whl/torch_stable.html
-pip install kappamodules
-pip install kappadata
-pip install kappaschedules
-pip install kappaconfig
-pip install kappaprofiler
+pip install torch==2.1.1+cu121 -f https://download.pytorch.org/whl/torch_stable.html
+pip install torchvision==0.16.1+cu121 -f https://download.pytorch.org/whl/torch_stable.html
+```
+
+
+You can also manually install the dependencies via pip  
+
+```
+pip install torch==2.1.1+cu121 -f https://download.pytorch.org/whl/torch_stable.html
+pip install torchvision==0.16.1+cu121 -f https://download.pytorch.org/whl/torch_stable.html
+pip install kappamodules==0.1.70
+pip install kappaschedules==0.0.31
+pip install kappadata==1.4.13
+pip install kappaconfig==1.0.31
+pip install kappaprofiler==1.0.11
 pip install wandb
 pip install einops
 pip install torchmetrics
