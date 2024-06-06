@@ -78,6 +78,7 @@ def load_model(ctor, ctor_kwargs, url=None, pretrained=True, preprocess=None, **
     if pretrained:
         assert url is not None, f"pretrained=True but no url found"
         sd = torch.hub.load_state_dict_from_url(url, map_location="cpu")
+        sd = sd["state_dict"]
         if preprocess is None:
             pass
         elif preprocess == "v1":
@@ -90,8 +91,7 @@ def load_model(ctor, ctor_kwargs, url=None, pretrained=True, preprocess=None, **
             sd["head.bias"] = sd.pop("head.1.bias")
         else:
             raise NotImplementedError(f"invalid checkpoint preprocessing '{preprocess}'")
-
-        model.load_state_dict(sd["state_dict"])
+        model.load_state_dict(sd)
     return model
 
 
