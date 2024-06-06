@@ -75,4 +75,11 @@ Checkpoints for our reimplementation of DeiT-III-T are provided as raw checkpoin
 
 If you like our work, please consider giving it a star :star: and cite us
 
-TODO
+```
+@article{alkin2024visionlstm,
+  title={Vision-LSTM: xLSTM as Generic Vision Backbone},
+  author={Benedikt Alkin and Maximilian Beck and Korbinian P{\"o}ppel and Sepp Hochreiter and Johannes Brandstette}
+  journal={arXiv preprint arXiv:TODO},
+  year={2024}
+}
+```
