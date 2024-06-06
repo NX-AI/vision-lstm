@@ -14,7 +14,7 @@ def parse_args():
     parser.add_argument("--data", type=str, required=True)
     parser.add_argument("--name", type=str, required=True)
     parser.add_argument("--device", type=str, default="cuda:0")
-    parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--num_workers", type=int, default=10)
     parser.add_argument("--precision", type=str, default="bf16", choices=["fp32", "fp16", "bf16"])
     return vars(parser.parse_args())

@@ -76,7 +76,7 @@ Checkpoints for our reimplementation of DeiT-III-T are provided as raw checkpoin
 
 # Other
 
-The code-base is an improved version of the one used for [MIM-Refiner](https://github.com/ml-jku/MIM-Refiner)
+This code-base is an improved version of the one used for [MIM-Refiner](https://github.com/ml-jku/MIM-Refiner)
 for which there exists a [demo video](https://youtu.be/80kc3hscTTg) to explain various things.
 
 
