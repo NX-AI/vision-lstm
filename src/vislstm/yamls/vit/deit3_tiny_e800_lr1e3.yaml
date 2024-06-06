@@ -1,0 +1,105 @@
+master_factory_base_path: vislstm
+name: in1k-vit-5m16-e800res192sd0-lr1e3
+stage_name: in1k
+vars:
+  lr: 1.0e-3
+  drop_path_rate: 0.0
+  drop_path_decay: false
+  max_epochs: 800
+  batch_size: 1024
+  resolution: 192
+
+datasets:
+  train:
+    kind: imagenet1k
+    split: train
+    sample_wrappers:
+      - kind: x_transform_wrapper
+        transform:
+          - kind: random_resized_crop
+            size: ${vars.resolution}
+            scale:
+              - 0.08
+              - 1.0
+            interpolation: bicubic
+          - kind: random_horizontal_flip
+          - kind: transforms.three_augment
+            blur_sigma:
+              - 0.1
+              - 2.0
+          - kind: color_jitter
+            brightness: 0.3
+            contrast: 0.3
+            saturation: 0.3
+            hue: 0.0
+          - kind: imagenet1k_norm
+      - kind: one_hot_wrapper
+    collators:
+      - kind: mix_collator
+        mixup_alpha: 0.8
+        cutmix_alpha: 1.0
+        mixup_p: 0.5
+        cutmix_p: 0.5
+        apply_mode: batch
+        lamb_mode: batch
+        shuffle_mode: flip
+  val:
+    kind: imagenet1k
+    split: val
+    sample_wrappers:
+      - kind: x_transform_wrapper
+        transform:
+          - kind: resize
+            size: ${vars.resolution}
+            interpolation: bicubic
+          - kind: center_crop
+            size: ${vars.resolution}
+          - kind: imagenet1k_norm
+
+model:
+  kind: models.single.vit
+  patch_size: 16
+  dim: 192
+  num_attn_heads: 3
+  depth: 12
+  drop_path_rate: ${vars.drop_path_rate}
+  drop_path_decay: ${vars.drop_path_decay}
+  learnable_pos_embed: true
+  layerscale: 1.0e-4
+  init_weights: truncnormal002
+  mode: classifier
+  pooling:
+    kind: class_token
+  optim:
+    kind: adamw
+    lr: ${vars.lr}
+    betas: [ 0.9, 0.999 ]
+    weight_decay: 0.05
+    schedule:
+      kind: linear_warmup_cosine_decay_schedule
+      warmup_epochs: 5
+      end_value: 1.0e-6
+    lr_scaler:
+      kind: linear_lr_scaler
+      divisor: 1024
+
+
+trainer:
+  kind: classification_trainer
+  precision: bfloat16
+  backup_precision: float16
+  max_epochs: ${vars.max_epochs}
+  effective_batch_size: ${vars.batch_size}
+  log_every_n_epochs: 1
+  callbacks:
+    # save last checkpoint
+    - kind: checkpoint_callback
+    # save latest checkpoint
+    - kind: checkpoint_callback
+      every_n_epochs: 10
+      save_latest_weights: true
+      save_latest_optim: true
+    # metrics
+    - kind: offline_accuracy_callback
+      every_n_epochs: 1
+      dataset_key: val

@@ -1,0 +1,17 @@
+channels:
+  - conda-forge
+  - pytorch
+  - defaults
+dependencies:
+  - python=3.9
+  - pytorch
+  - torchvision
+  - einops
+  - torchmetrics
+  - wandb
+  - pip
+  - pip:
+      - kappaconfig==1.0.31
+      - kappadata==1.4.13
+      - kappamodules==0.1.70
+      - kappaprofiler==1.0.11

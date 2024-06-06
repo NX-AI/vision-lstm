@@ -1,0 +1,66 @@
+# [REQUIRED] path to store logs/checkpoints
+output_path: ~/Documents/save
+
+
+# [OPTIONAL] path where pretrained models are stored
+#model_path: ~/Documents/models
+
+
+# global datasets
+global_dataset_paths:
+  imagenet1k: ~/Documents/data/imagenet1k
+
+
+# [OPTIONAL] path to (fast, possible non-persistent) local storage
+#   datasets are copied/unzipped/... from global_dataset_path to this path before training
+#local_dataset_path: ~/Documents/data_local
+
+
+# [OPTIONAL] the account name is only used to describe from which account the run was started from
+#   this is more descriptive than the hostname as it also specifies who ran it
+#   default: anonymous
+account_name: dev
+
+
+# [OPTIONAL] set environment variables
+#    TORCH_HOME for storing torchhub models
+#    TORCH_MODEL_ZOO for storing torchvision pretrained models
+env:
+  TORCH_HOME: ~/Documents/torch/home
+  TORCH_MODEL_ZOO: ~/Documents/torch/model_zoo
+
+
+# [OPTIONAL] how to use weights & biases for experiment tracking
+#   disabled (default) -> don't use wandb
+#   offline -> use wandb in offline mode
+#   online -> use wandb in online mode
+#default_wandb_mode: disabled
+
+
+# [OPTIONAL] master port for multi-GPU setting
+#   default: random master_port in [20000, 60000]
+#   if int: fixed master_port -> can lead to conflicts if e.g. starting two multi-GPU runs on the same device
+#   if [int, int]: master_port is sampled from this range
+#master_port: 43895
+
+
+# [OPTIONAL] cudnn benchmark
+#   if you want reproducability: benchmark=False deterministic=True
+#   if you want speed: benchmark=True deterministic=False
+#   default: true
+default_cudnn_benchmark: false
+default_cudnn_deterministic: true
+
+
+# [OPTIONAL] cuda profiling
+#   cuda profiling (will introduce torch.cuda.synchronize() calls at each @profile or @named_profile call)
+#   can be used to estimate runtimes of different code parts
+#   WARNING: if true, this heavily slows down training due to synchronization points
+#   default: false
+default_cuda_profiling: false
+
+
+# [OPTIONAL] replace BatchNorm layers with SyncBatchnorm layers
+#   (synchronized batch statistics over GPUs in multi-GPU setting)
+#   default: true
+default_sync_batchnorm: true

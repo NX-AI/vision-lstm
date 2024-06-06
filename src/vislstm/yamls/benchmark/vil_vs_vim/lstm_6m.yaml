@@ -1,0 +1,52 @@
+master_factory_base_path: vislstm
+name: benchmark-lstm6m16-res224-compile
+stage_name: benchmark
+
+datasets:
+  train:
+    kind: imagenet1k
+    split: val
+    sample_wrappers:
+      - kind: x_transform_wrapper
+        transform:
+          - kind: resize
+            size: 224
+            interpolation: bicubic
+          - kind: center_crop
+            size: 224
+          - kind: imagenet1k_norm
+
+model:
+  kind: models.single.vislstm
+  patch_size: 16
+  dim: 192
+  depth: 24
+  bidirectional: false
+  alternation: bidirectional
+  pos_embed_mode: learnable
+  mode: classifier
+  pooling:
+    kind: last_token
+  optim:
+    kind: adamw
+    lr: 1.0e-3
+
+
+trainer:
+  kind: classification_trainer
+  precision: bfloat16
+  backup_precision: float16
+  max_updates: 300
+  effective_batch_size: 256
+  log_every_n_epochs: 1
+  use_torch_compile: true
+  add_default_callbacks: false
+  add_trainer_callbacks: false
+  callbacks:
+    - kind: param_count_callback
+    - kind: progress_callback
+      every_n_updates: 50
+    - kind: train_time_callback
+      every_n_updates: 50
+    - kind: peak_memory_callback
+      every_n_updates: 50

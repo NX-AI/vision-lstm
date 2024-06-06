@@ -37,7 +37,7 @@ model = torch.hub.load(
 
 # Pre-trained Models
 
-Pre-trained models on ImageNet-1K can be loaded via torchhub or directly downloaded from  [here](https://ml.jku.at/research/vision_lstm/download/).
+Pre-trained models on ImageNet-1K can be loaded via torchhub or directly downloaded from [here](https://ml.jku.at/research/vision_lstm/download/).
 
 ```
 # pre-trained models (Table 1, left)
@@ -57,7 +57,7 @@ model = torch.hub.load("nx-ai/vision-lstm", "vil-tiny-e400")
 model = torch.hub.load("nx-ai/vision-lstm", "vil-tinyplus-e400")
 ``` 
 
-Checkpoints for our reimplementation of DeiT-III-T can be found in the link above.
+Checkpoints for our reimplementation of DeiT-III-T are provided as raw checkpoint [here](https://ml.jku.at/research/vision_lstm/download/).
 
 
 # Train your own models

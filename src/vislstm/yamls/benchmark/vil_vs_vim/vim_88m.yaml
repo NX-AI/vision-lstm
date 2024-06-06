@@ -1,0 +1,45 @@
+master_factory_base_path: vislstm
+name: benchmark-vim88m16-res224
+stage_name: benchmark
+
+datasets:
+  train:
+    kind: imagenet1k
+    split: val
+    sample_wrappers:
+      - kind: x_transform_wrapper
+        transform:
+          - kind: resize
+            size: 224
+            interpolation: bicubic
+          - kind: center_crop
+            size: 224
+          - kind: imagenet1k_norm
+
+model:
+  kind: models.single.vismamba
+  patch_size: 16
+  dim: 768
+  depth: 24
+  optim:
+    kind: adamw
+    lr: 0.1
+
+trainer:
+  kind: classification_trainer
+  precision: bfloat16
+  backup_precision: float16
+  max_updates: 300
+  effective_batch_size: 256
+  log_every_n_epochs: 1
+  disable_gradient_accumulation: true
+  add_default_callbacks: false
+  add_trainer_callbacks: false
+  callbacks:
+    - kind: param_count_callback
+    - kind: progress_callback
+      every_n_updates: 50
+    - kind: train_time_callback
+      every_n_updates: 50
+    - kind: peak_memory_callback
+      every_n_updates: 50

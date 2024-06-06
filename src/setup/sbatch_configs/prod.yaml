@@ -1,0 +1,11 @@
+# general
+default_account: <ACCOUNT>
+
+# working/log directories
+chdir: ${env:HOME}/<WORK_DIR>
+output: ${env:HOME}/<LOG_DIR>/%j.out
+
+# environment setup
+master_port: 55555
+env_name: <ENV_NAME>
+
