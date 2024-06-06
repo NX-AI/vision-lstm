@@ -34,6 +34,10 @@ model = torch.hub.load(
 )
 ```
 
+To setup the code-base, follow the instructions from [SETUP.md](https://github.com/NX-AI/vision-lstm/tree/main/src/SETUP.md).
+To start runs, follow the instructions from [RUN.md](https://github.com/NX-AI/vision-lstm/tree/main/src/RUN.md).
+
+
 
 # Pre-trained Models
 
@@ -58,11 +62,6 @@ model = torch.hub.load("nx-ai/vision-lstm", "vil-tinyplus-e400")
 ``` 
 
 Checkpoints for our reimplementation of DeiT-III-T are provided as raw checkpoint [here](https://ml.jku.at/research/vision_lstm/download/).
-
-
-# Train your own models
-
-TODO
 
 
 # Citation
