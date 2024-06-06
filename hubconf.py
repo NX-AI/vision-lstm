@@ -72,5 +72,5 @@ def load_model(ctor, ctor_kwargs, url=None, pretrained=True, **kwargs):
     return model
 
 
-for name, config in CONFIS.items():
+for name, config in CONFIGS.items():
     globals()[name] = partial(load_model, **config)
