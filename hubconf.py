@@ -81,7 +81,6 @@ def load_model(ctor, ctor_kwargs, url=None, pretrained=True, preprocess=None, **
         if preprocess is None:
             pass
         elif preprocess == "v1":
-            sd = sd["state_dict"]
             sd = {key.replace(".xlstm.", ".layer."): value for key, value in sd.items()}
             sd = {key.replace("xlstm.", ""): value for key, value in sd.items()}
             sd = {key.replace(".xlstm_norm.", ".norm."): value for key, value in sd.items()}
