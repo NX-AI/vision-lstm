@@ -4,6 +4,10 @@
 
 Pytorch implementation and pre-trained models of Vision-LSTM (ViL), an adaption of xLSTM to computer vision.
 
+<p align="center">
+<img width="100%" alt="vision_lstm_schematic" src="https://raw.githubusercontent.com/nx-ai/vision-lstm/main/docs/imgs/schematic.svg">
+</p>
+
 ## License
 
 This project is licensed under the [MIT](https://github.com/NX-AI/vision-lstm?tab=MIT-2-ov-file) License, except the following folders/files, 
