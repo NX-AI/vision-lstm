@@ -11,11 +11,53 @@ which are licensed under the [AGPL-3.0](https://github.com/NX-AI/vision-lstm?tab
 - src/vislstm/modules/xlstm
 - vision_lstm.py
 
+# Get started
+
+The package [vision_lstm](https://github.com/NX-AI/vision-lstm/tree/main/vision_lstm) provides a standalone
+implementation in the style of [timm](https://github.com/huggingface/pytorch-image-models).
+
+They can be loaded via a single line in torchhub
+```
+# load ViL-T
+model = torch.hub.load("nx-ai/vision-lstm", "VisionLSTM")
+# load your own model
+model = torch.hub.load(
+    "nx-ai/vision-lstm", 
+    "VisionLSTM",
+    dim=192,  # latent dimension (192 for ViL-T)
+    depth=24,  # how many ViL blocks
+    patch_size=16,  # patch_size (results in 196 patches for 224x224 images)
+    input_shape=(3, 224, 224),  # RGB images with resolution 224x224
+    output_shape=(1000,),  # classifier with 1000 classes
+    drop_path_rate=0.05,  # stochastic depth parameter
+    stride=None,  # set to 8 for long-sequence fine-tuning
+)
+```
 
 
 # Pre-trained Models
 
-TODO
+Pre-trained models on ImageNet-1K can be loaded via torchhub or directly downloaded from  [here](https://ml.jku.at/research/vision_lstm/download/).
+
+```
+# pre-trained models (Table 1, left)
+model = torch.hub.load("nx-ai/vision-lstm", "vil-tiny")
+model = torch.hub.load("nx-ai/vision-lstm", "vil-tinyplus")
+model = torch.hub.load("nx-ai/vision-lstm", "vil-small")
+model = torch.hub.load("nx-ai/vision-lstm", "vil-smallplus")
+model = torch.hub.load("nx-ai/vision-lstm", "vil-base")
+
+# long-sequence fine-tuned models (Table 1, right)
+model = torch.hub.load("nx-ai/vision-lstm", "vil-tinyplus-stride8")
+model = torch.hub.load("nx-ai/vision-lstm", "vil-smallplus-stride8")
+model = torch.hub.load("nx-ai/vision-lstm", "vil-base-stride8")
+
+# tiny models trained for only 400 epochs (Appendix A.2)
+model = torch.hub.load("nx-ai/vision-lstm", "vil-tiny-e400")
+model = torch.hub.load("nx-ai/vision-lstm", "vil-tinyplus-e400")
+``` 
+
+Checkpoints for our reimplementation of DeiT-III-T can be found in the link above.
 
 
 # Train your own models
