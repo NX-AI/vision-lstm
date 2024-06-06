@@ -20,7 +20,7 @@ smaller models and also heavily outperforms other sequential vision models such 
 [Vision-Mamba](https://arxiv.org/abs/2401.09417) (Vim)
 
 <p align="center">
-<img width="30%" alt="results_tiny_small" src="https://raw.githubusercontent.com/nx-ai/vision-lstm/main/docs/imgs/results_tiny_small.png">
+<img width="40%" alt="results_tiny_small" src="https://raw.githubusercontent.com/nx-ai/vision-lstm/main/docs/imgs/results_tiny_small.png">
 </p>
 
 
@@ -30,5 +30,5 @@ optimized ViT baselines yet. Nevertheless, it shows strong performances by achie
 hardware implementations such as CUDA kernels. So the hyperparameters for this scale are far from optimal.
 
 <p align="center">
-<img width="30%" alt="results_base" src="https://raw.githubusercontent.com/nx-ai/vision-lstm/main/docs/imgs/results_base.png">
+<img width="40%" alt="results_base" src="https://raw.githubusercontent.com/nx-ai/vision-lstm/main/docs/imgs/results_base.png">
 </p>
