@@ -61,6 +61,9 @@ model = torch.hub.load("nx-ai/vision-lstm", "vil-tiny-e400")
 model = torch.hub.load("nx-ai/vision-lstm", "vil-tinyplus-e400")
 ``` 
 
+An example of how to use these models can be found in [eval.py](https://github.com/NX-AI/vision-lstm/tree/main/eval.py)
+which evaluates the models on the ImageNet-1K validation set.
+
 Checkpoints for our reimplementation of DeiT-III-T are provided as raw checkpoint [here](https://ml.jku.at/research/vision_lstm/download/).
 
 
