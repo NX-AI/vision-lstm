@@ -87,7 +87,7 @@ If you like our work, please consider giving it a star :star: and cite us
 ```
 @article{alkin2024visionlstm,
   title={Vision-LSTM: xLSTM as Generic Vision Backbone},
-  author={Benedikt Alkin and Maximilian Beck and Korbinian P{\"o}ppel and Sepp Hochreiter and Johannes Brandstette}
+  author={Benedikt Alkin and Maximilian Beck and Korbinian P{\"o}ppel and Sepp Hochreiter and Johannes Brandstetter}
   journal={arXiv preprint arXiv:2406.04303},
   year={2024}
 }
