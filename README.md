@@ -1,7 +1,7 @@
 # Vision-LSTM (ViL)
 
 [[`Project Page`](https://nx-ai.github.io/vision-lstm)] 
-[[`Paper`](https://arxiv.org/abs/TODO)] 
+[[`Paper`](https://arxiv.org/abs/2406.04303)] 
 [[`Models`](https://github.com/nx-ai/vision-lstm#pre-trained-models)] 
 [[`Codebase Demo Video`](https://youtu.be/80kc3hscTTg)]
 [[`BibTeX`](https://github.com/nx-ai/vision-lstm#citation)]
@@ -88,7 +88,7 @@ If you like our work, please consider giving it a star :star: and cite us
 @article{alkin2024visionlstm,
   title={Vision-LSTM: xLSTM as Generic Vision Backbone},
   author={Benedikt Alkin and Maximilian Beck and Korbinian P{\"o}ppel and Sepp Hochreiter and Johannes Brandstette}
-  journal={arXiv preprint arXiv:TODO},
+  journal={arXiv preprint arXiv:2406.04303},
   year={2024}
 }
 ```
