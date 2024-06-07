@@ -1,6 +1,6 @@
 
 
-[[Code](https://github.com/nx-ai/vision-lstm)] [[Paper](https://arxiv.org/abs/2406.04303)] 
+[[Code](https://github.com/nx-ai/vision-lstm)] 
 [[Paper](https://arxiv.org/abs/2406.04303)] 
 [[Models](https://github.com/NX-AI/vision-lstm?tab=readme-ov-file#pre-trained-models)] 
 [[Codebase Demo Video](https://youtu.be/80kc3hscTTg)]
