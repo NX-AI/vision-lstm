@@ -21,10 +21,12 @@ which are licensed under the [AGPL-3.0](https://github.com/NX-AI/vision-lstm?tab
 
 # Get started
 
+## Architecture only
 The package [vision_lstm](https://github.com/NX-AI/vision-lstm/tree/main/vision_lstm) provides a standalone
 implementation in the style of [timm](https://github.com/huggingface/pytorch-image-models).
 
-They can be loaded via a single line in torchhub
+If you only need the model architecture, you can load it in a single line via torchhub or copy the
+[vision_lstm](https://github.com/NX-AI/vision-lstm/tree/main/vision_lstm) into your own code-base.
 ```
 # load ViL-T
 model = torch.hub.load("nx-ai/vision-lstm", "VisionLSTM")
@@ -42,9 +44,11 @@ model = torch.hub.load(
 )
 ```
 
-To setup the code-base, follow the instructions from [SETUP.md](https://github.com/NX-AI/vision-lstm/tree/main/src/SETUP.md).
-To start runs, follow the instructions from [RUN.md](https://github.com/NX-AI/vision-lstm/tree/main/src/RUN.md).
+# Full codebase (architecture, datasets, hyperparameters, ...)
 
+If you want to train models with our code-base, follow the setup instructions from 
+[SETUP.md](https://github.com/NX-AI/vision-lstm/tree/main/src/SETUP.md).
+To start runs, follow the instructions from [RUN.md](https://github.com/NX-AI/vision-lstm/tree/main/src/RUN.md).
 
 
 # Pre-trained Models

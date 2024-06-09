@@ -43,3 +43,8 @@ python main_sbatch.py --time 24:00:00 --hp vislstm/yamls/vil/pretrain/lstm_6M16_
 # train on 4 nodes
 python main_sbatch.py --time 24:00:00 --nodes 4 --hp vislstm/yamls/vil/pretrain/lstm_6M16_e400_bialter_bilatavg_lr1e3_res224.yaml
 ```
+
+
+# Use-cases
+We provide example yaml files for the following use-cases (hyperparameters may be sub-optimal):
+- Fine-tune a ImageNet-1K pre-trained model from torchhub on a custom dataset ([fine-tune a pre-trained ViL-T on CIFAR-10](https://github.com/NX-AI/vision-lstm/blob/main/src/vislstm/yamls/vil/transfer/finetune_from_torchhub.yaml))
