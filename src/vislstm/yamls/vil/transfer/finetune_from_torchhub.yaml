@@ -1,16 +1,19 @@
+# finetune a model loaded via torchhub on cifar10
+# hyperparameters are copied from "fine-tuning ImageNet-1K models pretrained on low-resolution on 224x224 resolution"
+# so they are most likely suboptimal, you probably need to adjust some hyperparameters
+# (e.g. higher learning rate, more epochs, ...)
 master_factory_base_path: vislstm
 name: ???-e20-lr1e5-wd1e8
-stage_name: in1k
+stage_name: cifar10-finetune
 vars:
   lr: 1.0e-5
-  max_epochs: 30
+  max_epochs: 20
   batch_size: 1024
   resolution: 224
-  stage_id: ???
 
 datasets:
   train:
-    kind: imagenet1k
+    kind: cifar10
     split: train
     sample_wrappers:
       - kind: x_transform_wrapper
@@ -42,9 +45,9 @@ datasets:
         apply_mode: batch
         lamb_mode: batch
         shuffle_mode: flip
-  val:
-    kind: imagenet1k
-    split: val
+  test:
+    kind: cifar10
+    split: test
     sample_wrappers:
       - kind: x_transform_wrapper
         transform:
@@ -56,14 +59,12 @@ datasets:
           - kind: imagenet1k_norm
 
 model:
-  # model type/dimension are set via the initializer
+  kind: torchhub_model
+  repo: nx-ai/vision-lstm
+  model: vil-tiny
   initializers:
-    - kind: previous_run_initializer
-      stage_id: ${vars.stage_id}
-      stage_name: in1k
-      model_name: vislstm
-      checkpoint: last
-      use_checkpoint_kwargs: true
+    - kind: reset_classifier_head_initializer
+      classifier_path: model.head
   optim:
     kind: adamw
     lr: ${vars.lr}
@@ -98,4 +99,4 @@ trainer:
     # metrics
     - kind: offline_accuracy_callback
       every_n_epochs: 1
-      dataset_key: val
+      dataset_key: test

@@ -56,12 +56,7 @@ datasets:
           - kind: imagenet1k_norm
 
 model:
-#  kind: models.single.vit
-#  patch_size: 16
-#  kwargs: ${select:tiny:${yaml:models/vit}}
-#  mode: classifier
-#  pooling:
-#    kind: class_token
+  # model type/dimension are set via the initializer
   stride: 8
   initializers:
     - kind: previous_run_initializer

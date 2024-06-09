@@ -1,12 +1,12 @@
+# finetune a model loaded via torchhub
 master_factory_base_path: vislstm
 name: ???-e20-lr1e5-wd1e8
 stage_name: in1k
 vars:
   lr: 1.0e-5
-  max_epochs: 30
+  max_epochs: 20
   batch_size: 1024
   resolution: 224
-  stage_id: ???
 
 datasets:
   train:
@@ -56,14 +56,9 @@ datasets:
           - kind: imagenet1k_norm
 
 model:
-  # model type/dimension are set via the initializer
-  initializers:
-    - kind: previous_run_initializer
-      stage_id: ${vars.stage_id}
-      stage_name: in1k
-      model_name: vislstm
-      checkpoint: last
-      use_checkpoint_kwargs: true
+  kind: torchhub_model
+  repo: nx-ai/vision-lstm
+  model: vil-tiny
   optim:
     kind: adamw
     lr: ${vars.lr}

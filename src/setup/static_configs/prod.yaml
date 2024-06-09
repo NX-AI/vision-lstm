@@ -9,6 +9,7 @@ output_path: /save
 # global datasets
 global_dataset_paths:
   imagenet1k: /data/imagenet1k
+  cifar10: /data/cifar10
 
 
 # [OPTIONAL] path to (fast, possible non-persistent) local storage

@@ -51,13 +51,15 @@ def _setup_master_factory():
     MasterFactory.set("finalizer", SingleFactory(module_names=["ksuit.models.extractors.finalizers.{kind}"]))
     MasterFactory.set("extractor", SingleFactory(module_names=["ksuit.models.extractors.{kind}"]))
     MasterFactory.set("pooling", SingleFactory(module_names=["ksuit.models.poolings.{kind}"]))
-    from ksuit.models import LinearModel, IdentityModel
+    from ksuit.models import LinearModel, IdentityModel, TorchhubModel, TorchvisionModel
     MasterFactory.set(
         "model",
         ModelFactory(
             kind_to_ctor=dict(
                 linear_model=LinearModel,
                 identity_model=IdentityModel,
+                torchhub_model=TorchhubModel,
+                torchvision_model=TorchvisionModel,
             ),
         ),
     )
