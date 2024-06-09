@@ -21,6 +21,9 @@ which are licensed under the [AGPL-3.0](https://github.com/NX-AI/vision-lstm?tab
 
 # Get started
 
+This code-base supports simple usage of Vision-LSTM with an "architecture-only" implementation and
+also a full training pipeline.
+
 ## Architecture only
 The package [vision_lstm](https://github.com/NX-AI/vision-lstm/tree/main/vision_lstm) provides a standalone
 implementation in the style of [timm](https://github.com/huggingface/pytorch-image-models).
@@ -44,7 +47,7 @@ model = torch.hub.load(
 )
 ```
 
-# Full codebase (architecture, datasets, hyperparameters, ...)
+## Full training pipeline (architecture, datasets, hyperparameters, ...)
 
 If you want to train models with our code-base, follow the setup instructions from 
 [SETUP.md](https://github.com/NX-AI/vision-lstm/tree/main/src/SETUP.md).
