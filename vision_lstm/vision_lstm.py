@@ -11,6 +11,8 @@ from torch import nn
 
 from .vision_lstm_util import interpolate_sincos, to_ntuple, VitPatchEmbed, VitPosEmbed2d, DropPath
 
+from huggingface_hub import PyTorchModelHubMixin
+
 
 class SequenceTraversal(Enum):
     ROWWISE_FROM_TOP_LEFT = "rowwise_from_top_left"
@@ -503,7 +505,7 @@ class ViLBlock(nn.Module):
         self.norm.reset_parameters()
 
 
-class VisionLSTM(nn.Module):
+class VisionLSTM(nn.Module, PyTorchModelHubMixin):
     def __init__(
             self,
             dim=192,
