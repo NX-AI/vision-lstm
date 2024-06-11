@@ -328,7 +328,7 @@ class SgdTrainer:
             logging.info(f"trying batch_size {batch_size}")
 
             # compose batch by repeating samples
-            # NOTE: collator needs to be called seperately (e.g. for creating batch_idx when using sparse tensors)
+            # NOTE: collator needs to be called separately (e.g. for creating batch_idx when using sparse tensors)
             batch = self.train_dataset.collator([sample] * batch_size)
 
             # try 2 update steps
@@ -581,7 +581,7 @@ class SgdTrainer:
         model, trainer_model, ddp_model = self.wrap_model(model)
         batch_size, accumulation_steps, train_batches_per_epoch = self._prepare_batch_size(model, ddp_model)
         assert trainer_model.model == model
-        # TODO model is moved to GPU seperately from trainer_model because of initializers
+        # TODO model is moved to GPU separately from trainer_model because of initializers
         #  -> trainer_model should be moved all at once
         #  -> wrap_model requires model to be on GPU because of check for SyncBatchNorm
         trainer_model = trainer_model.to(model.device)
