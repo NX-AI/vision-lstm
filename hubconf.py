@@ -1,10 +1,21 @@
 from functools import partial
-from vision_lstm import VisionLSTM
+from vision_lstm import VisionLSTM, VisionTransformer
 import torch
 
 dependencies = ["torch", "einops"]
 
 CONFIGS = {
+    # deit3-reimpl
+    "deit3-tiny-e400": dict(
+        ctor=VisionTransformer,
+        ctor_kwargs=dict(patch_size=16, dim=192, depth=12, num_heads=3),
+        url="https://ml.jku.at/research/vision_lstm/download/vit_tiny16_e400_in1k_deit3reimpl.th",
+    ),
+    "deit3-tiny": dict(
+        ctor=VisionTransformer,
+        ctor_kwargs=dict(patch_size=16, dim=192, depth=12, num_heads=3),
+        url="https://ml.jku.at/research/vision_lstm/download/vit_tiny16_e800_in1k_deit3reimpl.th",
+    ),
     # tiny
     "vil-tiny": dict(
         ctor=VisionLSTM,
