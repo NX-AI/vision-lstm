@@ -72,7 +72,7 @@ model = torch.hub.load("nx-ai/vision-lstm", "vil-smallplus-stride8")  # 82.2%
 model = torch.hub.load("nx-ai/vision-lstm", "vil-base-stride8")       # 82.7%
 
 # tiny models trained for only 400 epochs (Appendix A.2)
-model = torch.hub.load("nx-ai/vision-lstm", "vil-tiny-e400")          # 76.0%
+model = torch.hub.load("nx-ai/vision-lstm", "vil-tiny-e400")          # 76.1%
 model = torch.hub.load("nx-ai/vision-lstm", "vil-tinyplus-e400")      # 77.2%
 ``` 
 
