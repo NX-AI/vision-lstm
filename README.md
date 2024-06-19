@@ -54,39 +54,41 @@ If you want to train models with our code-base, follow the setup instructions fr
 To start runs, follow the instructions from [RUN.md](https://github.com/NX-AI/vision-lstm/tree/main/src/RUN.md).
 
 
-# Pre-trained Models
+# Pre-trained models
 
 Pre-trained models on ImageNet-1K can be loaded via torchhub or directly downloaded from [here](https://ml.jku.at/research/vision_lstm/download/).
 
 ```
 # pre-trained models (Table 1, left)
-model = torch.hub.load("nx-ai/vision-lstm", "vil-tiny")
-model = torch.hub.load("nx-ai/vision-lstm", "vil-tinyplus")
-model = torch.hub.load("nx-ai/vision-lstm", "vil-small")
-model = torch.hub.load("nx-ai/vision-lstm", "vil-smallplus")
-model = torch.hub.load("nx-ai/vision-lstm", "vil-base")
+model = torch.hub.load("nx-ai/vision-lstm", "vil-tiny")               # 77.3%
+model = torch.hub.load("nx-ai/vision-lstm", "vil-tinyplus")           # 78.1%
+model = torch.hub.load("nx-ai/vision-lstm", "vil-small")              # 80.7%
+model = torch.hub.load("nx-ai/vision-lstm", "vil-smallplus")          # 80.9%
+model = torch.hub.load("nx-ai/vision-lstm", "vil-base")               # 81.6%
 
 # long-sequence fine-tuned models (Table 1, right)
-model = torch.hub.load("nx-ai/vision-lstm", "vil-tinyplus-stride8")
-model = torch.hub.load("nx-ai/vision-lstm", "vil-smallplus-stride8")
-model = torch.hub.load("nx-ai/vision-lstm", "vil-base-stride8")
+model = torch.hub.load("nx-ai/vision-lstm", "vil-tinyplus-stride8")   # 80.0%
+model = torch.hub.load("nx-ai/vision-lstm", "vil-smallplus-stride8")  # 82.2%
+model = torch.hub.load("nx-ai/vision-lstm", "vil-base-stride8")       # 82.7%
 
 # tiny models trained for only 400 epochs (Appendix A.2)
-model = torch.hub.load("nx-ai/vision-lstm", "vil-tiny-e400")
-model = torch.hub.load("nx-ai/vision-lstm", "vil-tinyplus-e400")
+model = torch.hub.load("nx-ai/vision-lstm", "vil-tiny-e400")          # 76.0%
+model = torch.hub.load("nx-ai/vision-lstm", "vil-tinyplus-e400")      # 77.2%
 ``` 
 
 An example of how to use these models can be found in [eval.py](https://github.com/NX-AI/vision-lstm/tree/main/eval.py)
 which evaluates the models on the ImageNet-1K validation set.
 
+
+## DeiT-III-T reimplementation models
 Checkpoints for our reimplementation of DeiT-III-T are provided as raw checkpoint 
 [here](https://ml.jku.at/research/vision_lstm/download/) and can be loaded from torchhub 
 (the vision transformer implementation is based on [KappaModules](https://github.com/BenediktAlkin/KappaModules) so 
 you need to install it before loading a ViT checkpoint via torchhub by running `pip install kappamodules==0.1.70`).
 
 ```
-model = torch.hub.load("nx-ai/vision-lstm", "deit3-tiny-e400")
-model = torch.hub.load("nx-ai/vision-lstm", "deit3-tiny")
+model = torch.hub.load("nx-ai/vision-lstm", "deit3-tiny-e400")  # 75.6%
+model = torch.hub.load("nx-ai/vision-lstm", "deit3-tiny")       # 76.2%
 ```
 
 # Other
