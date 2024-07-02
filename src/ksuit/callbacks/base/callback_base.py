@@ -113,5 +113,8 @@ class CallbackBase:
     def _after_training(self, **kwargs):
         pass
 
+    def register_root_datasets(self, dataset_config_provider=None, is_mindatarun=False):
+        pass
+
     def resume_from_checkpoint(self, stage_name, stage_id, model):
         pass

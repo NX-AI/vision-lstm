@@ -64,8 +64,8 @@ class PeriodicCallback(CallbackBase):
     def _to_string(self):
         return None
 
-    def _register_sampler_config_from_key(self, key, mode):
-        dataset = self.data_container.get_dataset(key, mode=mode)
+    def _register_sampler_config_from_key(self, key, mode, max_size=None):
+        dataset = self.data_container.get_dataset(key=key, mode=mode, max_size=max_size)
         return self.__register_sampler_config(dataset=dataset, mode=mode, name=key, collator=dataset.collator)
 
     def _register_sampler_config_from_dataset(self, dataset, mode, name):

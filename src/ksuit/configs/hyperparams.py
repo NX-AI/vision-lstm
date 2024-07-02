@@ -12,8 +12,9 @@ from .resolver_processors.minmodel_preprocessor import MinModelPreProcessor
 from .resolver_processors.precision_preprocessor import PrecisionPreProcessor
 from .resolver_processors.remove_large_collections_postprocessor import RemoveLargeCollectionsProcessor
 from .resolver_processors.schedule_template_postprocessor import ScheduleTemplatePostProcessor
+from .resolver_processors.testrun_postprocessor import TestrunPostProcessor
 
-TESTRUN_EFFECTIVE_BATCH_SIZE = 8
+TESTRUN_EFFECTIVE_BATCH_SIZE = 2
 TESTRUN_EPOCHS = 2
 TESTRUN_UPDATES_PER_EPOCH = 3
 TESTRUN_UPDATES = TESTRUN_EPOCHS * TESTRUN_UPDATES_PER_EPOCH
@@ -61,6 +62,8 @@ class Hyperparams:
         resolver = kc.DefaultResolver(template_path=template_path)
         resolver.pre_processors.append(PrecisionPreProcessor())
         resolver.post_processors.append(ScheduleTemplatePostProcessor())
+        if testrun:
+            resolver.post_processors.append(TestrunPostProcessor())
         if minmodelrun or testrun:
             resolver.pre_processors.append(MinModelPreProcessor())
             resolver.post_processors.append(MinModelPostProcessor())

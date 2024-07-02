@@ -1,10 +1,12 @@
 from functools import partial
-from vision_lstm import VisionLSTM, VisionTransformer
+
 import torch
+
+from vision_lstm import VisionLSTM, VisionLSTM2, VisionTransformer
 
 dependencies = ["torch", "einops"]
 
-CONFIGS = {
+CONFIGS_VIT = {
     # deit3-reimpl
     "deit3-tiny-e400": dict(
         ctor=VisionTransformer,
@@ -16,6 +18,8 @@ CONFIGS = {
         ctor_kwargs=dict(patch_size=16, dim=192, depth=12, num_heads=3),
         url="https://ml.jku.at/research/vision_lstm/download/vit_tiny16_e800_in1k_deit3reimpl.th",
     ),
+}
+CONFIGS_V1 = {
     # tiny
     "vil-tiny": dict(
         ctor=VisionLSTM,
@@ -82,13 +86,83 @@ CONFIGS = {
         preprocess="v1",
     ),
 }
+CONFIGS_V2 = {
+    # tiny
+    "vil2-tiny": dict(
+        ctor=VisionLSTM2,
+        ctor_kwargs=dict(
+            dim=192,
+            depth=12,
+            legacy_norm=True,
+            pooling="bilateral_flatten",
+            conv_kind="2d",
+            conv_kernel_size=3,
+            norm_bias=True,
+            proj_bias=True,
+        ),
+        url="https://ml.jku.at/research/vision_lstm/download/vil2_tiny16_e800_in1k.th",
+        preprocess="v2",
+    ),
+    "vil2-tiny-e400": dict(
+        ctor=VisionLSTM2,
+        ctor_kwargs=dict(
+            dim=192,
+            depth=12,
+            legacy_norm=True,
+            pooling="bilateral_flatten",
+            conv_kind="2d",
+            conv_kernel_size=3,
+            norm_bias=True,
+            proj_bias=True,
+        ),
+        url="https://ml.jku.at/research/vision_lstm/download/vil2_tiny16_e400_in1k.th",
+        preprocess="v2",
+    ),
+    # small
+    "vil2-small": dict(
+        ctor=VisionLSTM2,
+        ctor_kwargs=dict(
+            dim=384,
+            depth=12,
+            legacy_norm=True,
+            pooling="bilateral_flatten",
+            conv_kind="2d",
+            conv_kernel_size=3,
+            norm_bias=True,
+            proj_bias=True,
+        ),
+        url="https://ml.jku.at/research/vision_lstm/download/vil2_small16_e400_in1k.th",
+        preprocess="v2",
+    ),
+    # base
+    "vil2-base": dict(
+        ctor=VisionLSTM2,
+        ctor_kwargs=dict(
+            dim=768,
+            depth=12,
+            legacy_norm=True,
+            pooling="bilateral_flatten",
+            conv_kind="2d",
+            conv_kernel_size=3,
+            norm_bias=True,
+            proj_bias=True,
+        ),
+        url="https://ml.jku.at/research/vision_lstm/download/vil2_base16_e400_in1k.th",
+        preprocess="v2",
+    ),
+}
 
 
 def load_model(ctor, ctor_kwargs, url=None, pretrained=True, preprocess=None, **kwargs):
     model = ctor(**ctor_kwargs, **kwargs)
     if pretrained:
         assert url is not None, f"pretrained=True but no url found"
-        sd = torch.hub.load_state_dict_from_url(url, map_location="cpu")
+        if url.startswith("https://"):
+            sd = torch.hub.load_state_dict_from_url(url, map_location="cpu")
+        else:
+            # load from disk for debugging
+            from pathlib import Path
+            sd = torch.load(Path(url).expanduser(), map_location="cpu")
         sd = sd["state_dict"]
         if preprocess is None:
             pass
@@ -101,11 +175,39 @@ def load_model(ctor, ctor_kwargs, url=None, pretrained=True, preprocess=None, **
             sd["norm.bias"] = sd.pop("head.0.bias")
             sd["head.weight"] = sd.pop("head.1.weight")
             sd["head.bias"] = sd.pop("head.1.bias")
+        elif preprocess == "v2":
+            sd = {key.replace(".xlstm.", ".layer."): value for key, value in sd.items()}
+            sd = {key.replace("xlstm.", ""): value for key, value in sd.items()}
+            sd = {key.replace(".xlstm_norm.", ".norm."): value for key, value in sd.items()}
+            sd = {key.replace(".conv1d.", ".conv."): value for key, value in sd.items()}
+            depth = ctor_kwargs["depth"]
+            for i in range(depth * 2):
+                if i % 2 == 0:
+                    sd = {
+                        key.replace(f"blocks.{i}.", f"blocks.{i // 2}.rowwise_from_top_left."): value
+                        for key, value in sd.items()
+                    }
+                else:
+                    sd = {
+                        key.replace(f"blocks.{i}.", f"blocks.{i // 2}.rowwise_from_bot_right."): value
+                        for key, value in sd.items()
+                    }
+            sd["norm.weight"] = sd.pop("post_blocks_norm.weight")
+            sd["norm.bias"] = sd.pop("post_blocks_norm.bias")
+            if ctor_kwargs["legacy_norm"]:
+                sd["legacy_norm.weight"] = sd.pop("head.0.weight")
+                sd["legacy_norm.bias"] = sd.pop("head.0.bias")
+            sd["head.weight"] = sd.pop("head.1.weight")
+            sd["head.bias"] = sd.pop("head.1.bias")
         else:
             raise NotImplementedError(f"invalid checkpoint preprocessing '{preprocess}'")
         model.load_state_dict(sd)
     return model
 
 
-for name, config in CONFIGS.items():
+for name, config in CONFIGS_VIT.items():
+    globals()[name] = partial(load_model, **config)
+for name, config in CONFIGS_V1.items():
+    globals()[name] = partial(load_model, **config)
+for name, config in CONFIGS_V2.items():
     globals()[name] = partial(load_model, **config)

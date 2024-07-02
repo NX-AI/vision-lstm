@@ -66,7 +66,7 @@ def _setup_master_factory():
     # optim
     MasterFactory.set("param_group_modifier", SingleFactory(module_names=["ksuit.optim.param_group_modifiers.{kind}"]))
     MasterFactory.set("lr_scaler", SingleFactory(module_names=["ksuit.optim.lr_scalers.{kind}"]))
-    MasterFactory.set("optim", OptimFactory(module_names=["torch.optim"]))
+    MasterFactory.set("optim", OptimFactory(module_names=["torch.optim", "timm.optim.{kind}"]))
     # trainer
     MasterFactory.set("early_stopper", SingleFactory(module_names=["ksuit.trainers.early_stoppers.{kind}"]))
     MasterFactory.set("trainer", SingleFactory(module_names=["ksuit.trainers.{kind}"]))

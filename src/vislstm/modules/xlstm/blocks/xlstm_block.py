@@ -69,7 +69,7 @@ class xLSTMBlock(nn.Module):
         )
 
         self.drop_path1 = DropPath(drop_prob=config.drop_path)
-        self.xlstm_norm = LayerNorm(ndim=embedding_dim, weight=True, bias=False)
+        self.xlstm_norm = LayerNorm(ndim=embedding_dim, weight=True, bias=config.mlstm.bias)
 
         if self.config.mlstm is not None:
             self.xlstm = mLSTMLayer(config=self.config.mlstm)

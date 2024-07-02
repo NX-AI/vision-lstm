@@ -10,6 +10,7 @@ output_path: ~/Documents/save
 global_dataset_paths:
   imagenet1k: ~/Documents/data/imagenet1k
   cifar10: ~/Documents/data/cifar10
+  ade20k: ~/Documents/data/ade20k
 
 
 # [OPTIONAL] path to (fast, possible non-persistent) local storage

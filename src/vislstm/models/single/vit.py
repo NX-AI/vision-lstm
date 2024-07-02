@@ -1,12 +1,18 @@
+from functools import partial
+
 import einops
 import torch
+import torch.nn.functional as F
+from kappamodules.attention import DotProductAttention1d
 from kappamodules.functional.pos_embed import interpolate_sincos
+from kappamodules.init import init_xavier_uniform_zero_bias
 from kappamodules.transformer import PrenormBlock
 from kappamodules.vit import VitPatchEmbed, VitPosEmbed2d, VitClassTokens
 from torch import nn
 
 from ksuit.factory import MasterFactory
 from ksuit.models import SingleModel
+from ksuit.models.poolings import ToImage
 from ksuit.optim.param_group_modifiers import WeightDecayByNameModifier
 from ksuit.utils.formatting_utils import list_to_string
 from ksuit.utils.param_checking import to_ntuple
@@ -22,14 +28,15 @@ class Vit(SingleModel):
             stride=None,
             mlp_hidden_dim=None,
             drop_path_rate=0.,
-            drop_path_decay=True,
+            drop_path_decay=False,
             num_cls_tokens=1,
             layerscale=None,
             learnable_pos_embed=False,
             init_weights="truncnormal002",
             flash_attention=True,
-            mode=None,
+            mode="features",
             pooling=None,
+            use_relpos_bias=False,
             eps=1e-6,
             **kwargs,
     ):
@@ -45,6 +52,7 @@ class Vit(SingleModel):
         self.mode = mode
         self.pooling = MasterFactory.get("pooling").create(pooling, static_ctx=self.static_ctx)
         self.eps = eps
+        self.use_relpos_bias = use_relpos_bias
 
         # initialize patch_embed
         self.patch_embed = VitPatchEmbed(
@@ -80,6 +88,12 @@ class Vit(SingleModel):
             block_kwargs["attn_ctor"] = DotProductAttentionSlow
 
         # blocks
+        if use_relpos_bias:
+            block_kwargs["attn_ctor"] = partial(
+                DotProductAttention1d,
+                rel_pos_bias="learnable",
+                seqlens=self.patch_embed.seqlens,
+            )
         self.blocks = nn.ModuleList([
             PrenormBlock(
                 dim=dim,
@@ -95,11 +109,18 @@ class Vit(SingleModel):
             for i in range(self.depth)
         ])
 
-        if mode is None:
+        if mode == "features":
             assert self.output_shape is None
-            assert self.pooling is None
             self.head = None
             self.output_shape = (self.patch_embed.num_patches + self.num_cls_tokens, dim)
+            if self.pooling is not None:
+                self.output_shape = self.pooling.get_output_shape(self.output_shape)
+        elif mode == "segmentation":
+            assert self.output_shape is not None and len(self.output_shape) == 3
+            assert self.pooling is None
+            self.pooling = ToImage(static_ctx=self.static_ctx)
+            self.head = nn.Conv2d(dim, self.output_shape[0], kernel_size=1)
+            init_xavier_uniform_zero_bias(self.head)
         elif mode == "classifier":
             assert self.output_shape is not None and len(self.output_shape) == 1
             assert self.pooling is not None
@@ -121,8 +142,26 @@ class Vit(SingleModel):
         if old_pos_embed.shape != self.pos_embed.embed.shape:
             self.logger.info(f"interpolate pos_embed: {old_pos_embed.shape} -> {self.pos_embed.embed.shape}")
             state_dict["pos_embed.embed"] = interpolate_sincos(embed=old_pos_embed, seqlens=self.pos_embed.seqlens)
+        # rel_pos is added after pretraining
+        if self.use_relpos_bias:
+            allowed_missing_keys += [key for key in self.state_dict().keys() if ".rel_pos_" in key]
+        if self.mode == "features":
+            # remove head (e.g. supervised pre-training -> UperNet semantic segmentation)
+            for key in list(state_dict.keys()):
+                if key.startswith("head."):
+                    state_dict.pop(key)
         if self.mode == "classifier":
             allowed_missing_keys += ["head.0.weight", "head.0.bias", "head.1.weight", "head.1.bias"]
+            # reinitialize head for transfer classification
+            if "head.1.bias" in state_dict and state_dict["head.1.bias"].shape != self.head[1].bias.shape:
+                self.logger.info(f"classification head shape doesnt match -> reinitialize classification head")
+                state_dict.pop("head.1.weight")
+                state_dict.pop("head.1.bias")
+        if self.mode == "segmentation":
+            # head is segmentation head if ndim==4 -> otherwise remove head (e.g. from supervised pre-training)
+            if "head.weight" not in state_dict or state_dict["head.weight"].ndim != 4:
+                allowed_missing_keys += ["head.weight", "head.bias"]
+                state_dict = {key: value for key, value in state_dict.items() if not key.startswith("head.")}
         missing_keys, unexpected_keys = super().load_state_dict(state_dict=state_dict, strict=False)
         if strict:
             for allowed_missing_key in allowed_missing_keys:
@@ -170,6 +209,11 @@ class Vit(SingleModel):
         if self.head is not None:
             x = self.head(x)
 
+        if self.mode == "segmentation":
+            # interpolate is not supported in bfloat16
+            with torch.autocast(device_type=str(x.device).split(":")[0], enabled=False):
+                x = F.interpolate(x.float(), size=self.output_shape[1:], mode="bilinear", align_corners=False)
+
         outputs["main"] = x
         return outputs
 
@@ -177,3 +221,7 @@ class Vit(SingleModel):
         assert self.mode == "classifier"
         outputs = self.forward(*args, **kwargs)
         return dict(main=outputs["main"])
+
+    def segment(self, x):
+        assert self.mode == "segmentation"
+        return self.forward(x)["main"]

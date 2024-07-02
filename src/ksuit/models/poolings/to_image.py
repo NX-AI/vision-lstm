@@ -19,7 +19,13 @@ class ToImage(PoolingBase):
         return dim, *self.static_ctx["sequence_lengths"]
 
     def forward(self, all_tokens, *_, **__):
-        patch_tokens = all_tokens[:, self.static_ctx["num_aux_tokens"]:]
+        if "num_aux_tokens" in self.static_ctx:
+            num_cls_tokens = self.static_ctx["num_aux_tokens"]
+        elif "num_cls_tokens" in self.static_ctx:
+            num_cls_tokens = self.static_ctx["num_cls_tokens"]
+        else:
+            raise NotImplementedError
+        patch_tokens = all_tokens[:, num_cls_tokens:]
         seqlen_h, seqlen_w = self.static_ctx["sequence_lengths"]
         img = einops.rearrange(
             patch_tokens,

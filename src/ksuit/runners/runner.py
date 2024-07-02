@@ -276,6 +276,12 @@ class Runner:
                 path_provider=path_provider,
             ),
         )
+        # register datasets of callbacks (e.g. for ImageNet-C the dataset never changes so its pointless to specify)
+        for callback in trainer.callbacks:
+            callback.register_root_datasets(
+                dataset_config_provider=dataset_config_provider,
+                is_mindatarun=cli_args.testrun or cli_args.mindatarun,
+            )
 
         # init model
         logging.info("------------------")
@@ -317,7 +323,7 @@ class Runner:
         # log profiler times
         if not is_cuda_profiling:
             logging.warning(
-                f"cuda profiling is not activated -> all cuda calls are executed asynchronously ->"
+                f"cuda profiling is not activated -> all cuda calls are executed asynchronously -> "
                 f"this will result in inaccurate profiling times where the time for all asynchronous cuda operation "
                 f"will be attributed to the first synchronous cuda operation "
                 f"https://github.com/BenediktAlkin/KappaProfiler?tab=readme-ov-file#time-async-operations"

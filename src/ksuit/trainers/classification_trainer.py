@@ -8,8 +8,9 @@ from .base import SgdTrainer
 
 
 class ClassificationTrainer(SgdTrainer):
-    def __init__(self, forward_kwargs=None, **kwargs):
+    def __init__(self, loss_kind="cross_entropy", forward_kwargs=None, **kwargs):
         super().__init__(**kwargs)
+        self.loss_kind = loss_kind
         self.forward_kwargs = MasterFactory.create_dict(forward_kwargs)
 
     def get_trainer_callbacks(self, model=None):
@@ -67,10 +68,23 @@ class ClassificationTrainer(SgdTrainer):
             # calculate loss
             if torch.is_tensor(preds):
                 preds = dict(main=preds)
-            losses = {
-                name: F.cross_entropy(preds, target, reduction=reduction)
-                for name, preds in preds.items()
-            }
+            if self.trainer.loss_kind == "cross_entropy":
+                losses = {
+                    name: F.cross_entropy(preds, target, reduction=reduction)
+                    for name, preds in preds.items()
+                }
+            # elif self.trainer.loss_kind == "binary_cross_entropy":
+            #     # check that target vector is one-hot or a smoothed version of one-hot
+            #     num_classes = self.trainer.data_container.get_dataset("train").getdim("class")
+            #     if num_classes > 2:
+            #         assert target.size(1) == num_classes
+            #     losses = {
+            #         name: F.binary_cross_entropy_with_logits(preds, target, reduction=reduction)
+            #         for name, preds in preds.items()
+            #     }
+            else:
+                raise NotImplementedError
+
             losses["total"] = sum(losses.values())
 
             # compose outputs (for callbacks to use)

@@ -29,7 +29,7 @@ class DatasetConfigProvider:
     def get_global_dataset_path(self, dataset_identifier):
         assert dataset_identifier in self._global_dataset_paths, \
             f"no path found for identifier {dataset_identifier} -> specify in static_config global_dataset_paths"
-        return to_path(self._global_dataset_paths[dataset_identifier], mkdir=True)
+        return to_path(self._global_dataset_paths[dataset_identifier], mkdir=False)
 
     @property
     def local_dataset_path(self):

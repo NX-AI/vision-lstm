@@ -2,6 +2,7 @@
 # Copyright (c) NXAI GmbH and its affiliates 2024
 # Benedikt Alkin, Maximilian Beck, Korbinian Pöppel
 import math
+import warnings
 from enum import Enum
 
 import einops
@@ -520,6 +521,12 @@ class VisionLSTM(nn.Module):
             legacy_norm=False,
     ):
         super().__init__()
+        warnings.warn(
+            "You are using an old version of VisionLSTM that uses (i) bilateral_avg pooling instead of "
+            "bilateral_concat (ii) causal conv1d instead of conv2d before q and k (iii) no biases in projection "
+            "and layernorms. These three changes improve ImageNet-1K accuracy of a ViL-T from 77.3% to 78.1%. "
+            "We recommend to use VisionLSTM2 instead of VisionLSTM."
+        )
         self.input_shape = input_shape
         self.output_shape = output_shape
         ndim = len(self.input_shape) - 1

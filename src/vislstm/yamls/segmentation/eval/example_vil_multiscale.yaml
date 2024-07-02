@@ -1,0 +1,119 @@
+master_factory_base_path: vislstm
+name: vo9kn94r
+stage_name: ade20k
+vars:
+  stage_id: kiigsa63
+
+datasets:
+  train:
+    kind: datasets.ade20k
+    split: training
+    sample_wrappers:
+      - kind: segmentation_transform_wrapper
+        transform:
+          - kind: segmentation_random_resize
+            ratio_resolution: [ 2048, 512 ]
+            ratio_range: [ 0.5, 2.0 ]
+            interpolation: bicubic
+          - kind: segmentation_random_crop
+            size: 512
+            max_category_ratio: 0.75
+            ignore_index: -1
+          - kind: segmentation_random_horizontal_flip
+      - kind: x_transform_wrapper
+        transform:
+          - kind: color_jitter
+            brightness: 0.5
+            contrast: 0.5
+            saturation: 0.5
+            hue: 0.25
+          - kind: imagenet1k_norm
+      - kind: segmentation_transform_wrapper
+        transform:
+          - kind: segmentation_pad
+            size: 512
+            fill: -1
+  val:
+    kind: datasets.ade20k
+    split: validation
+    sample_wrappers:
+      - kind: x_transform_wrapper
+        transform:
+          - kind: imagenet1k_norm
+
+model:
+  kind: models.upernet.upernet_model
+  auxiliary_feature_idx: 2
+  encoder:
+#    kind: models.single.vit
+#    patch_size: 16
+#    kwargs: ${select:small:${yaml:models/vit}}
+    is_frozen: True
+    initializers:
+      - kind: previous_run_initializer
+        stage_id: ${vars.stage_id}
+        stage_name: ade20k
+        model_name: upernet_model.encoder
+        checkpoint: latest
+        use_checkpoint_kwargs: true
+  extractor:
+    kind: block_extractor
+    model_path: xlstm
+    block_indices: [ 7, 11, 15, 23 ]
+    pooling:
+      kind: to_image
+  postprocessor:
+#    kind: models.upernet.upernet_postprocessor
+    is_frozen: True
+    initializers:
+      - kind: previous_run_initializer
+        stage_id: ${vars.stage_id}
+        stage_name: ade20k
+        model_name: upernet_model.postprocessor
+        checkpoint: latest
+        use_checkpoint_kwargs: true
+  decoder:
+#    kind: models.upernet.upernet_decoder
+#    dim: 384
+    is_frozen: True
+    initializers:
+      - kind: previous_run_initializer
+        stage_id: ${vars.stage_id}
+        stage_name: ade20k
+        model_name: upernet_model.decoder
+        checkpoint: latest
+        use_checkpoint_kwargs: true
+  auxiliary:
+#    kind: models.upernet.upernet_auxiliary
+#    dim: 384
+    is_frozen: True
+    initializers:
+      - kind: previous_run_initializer
+        stage_id: ${vars.stage_id}
+        stage_name: ade20k
+        model_name: upernet_model.auxiliary
+        checkpoint: latest
+        use_checkpoint_kwargs: true
+
+trainer:
+  kind: segmentation_trainer
+  precision: float16
+  backup_precision: float32
+  effective_batch_size: 2
+  max_epochs: 0
+  ignore_index: -1
+  log_every_n_epochs: 1
+  skip_nan_loss: true
+  loss_weights:
+    auxiliary: 0.4
+  callbacks:
+    - kind: offline_segmentation_callback
+      every_n_epochs: 1
+      batch_size: 1
+      dataset_key: val
+      ignore_index: -1
+      mode: multiscale
+      mode_kwargs:
+        scale_factors: [ 0.75, 1.0, 1.25, 1.5, 1.75 ]
+        flip: true
+        stride: [ 341, 341 ]

@@ -906,7 +906,7 @@ class SgdTrainer:
                 if self.skip_nan_loss:
                     total_loss = all_gather_nograd(total_loss)
                     if torch.any(torch.isnan(total_loss)):
-                        self.logger.info(f"encountered nan loss -> skip (counter: {self.skip_nan_loss})")
+                        self.logger.info(f"encountered nan loss -> skip (counter: {self.skip_nan_loss_counter})")
                         do_step = False
                         self.skip_nan_loss_counter += 1
                         if self.skip_nan_loss_counter > 100:

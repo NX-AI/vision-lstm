@@ -10,6 +10,11 @@ output_path: /save
 global_dataset_paths:
   imagenet1k: /data/imagenet1k
   cifar10: /data/cifar10
+  ade20k: /data/ADEChallengeData2016
+  imagenet_c: /data/ImageNet-C
+  imagenet_a: /data/ImageNet-A
+  imagenet_r: /data/ImageNet-R
+  imagenet_sketch: /data/ImageNet-Sketch
 
 
 # [OPTIONAL] path to (fast, possible non-persistent) local storage

@@ -15,12 +15,17 @@ def create_block_stack(
         dropout_rate=0.,
         proj_factor=2.0,
         add_post_blocks_norm=True,
+        conv1d_kernel_size=4,
+        use_conv2d=False,
+        bias=False,
+        use_v_conv=False,
+        share_conv=False,
 ):
     return xLSTMBlockStack(
         xLSTMBlockStackConfig(
             mlstm_block=mLSTMBlockConfig(
                 mlstm=mLSTMLayerConfig(
-                    conv1d_kernel_size=4,
+                    conv1d_kernel_size=conv1d_kernel_size,
                     qkv_proj_blocksize=4,
                     num_heads=4,
                     bidirectional=bidirectional,
@@ -29,6 +34,9 @@ def create_block_stack(
                     alternation=alternation,
                     sharedirs=sharedirs,
                     proj_factor=proj_factor,
+                    use_conv2d=use_conv2d,
+                    use_v_conv=use_v_conv,
+                    share_conv=share_conv,
                 ),
             ),
             # slstm_block=sLSTMBlockConfig(
@@ -49,5 +57,6 @@ def create_block_stack(
             dropout=dropout_rate,
             slstm_at=[],
             add_post_blocks_norm=add_post_blocks_norm,
+            bias=bias,
         ),
     )

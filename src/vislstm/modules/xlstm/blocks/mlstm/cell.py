@@ -16,6 +16,7 @@ class mLSTMCellConfig:
     context_length: int = -1
     embedding_dim: int = -1
     num_heads: int = -1
+    bias: bool = False
 
 
 class mLSTMCell(nn.Module):
@@ -30,7 +31,7 @@ class mLSTMCell(nn.Module):
         self.igate = nn.Linear(3 * config.embedding_dim, config.num_heads)
         self.fgate = nn.Linear(3 * config.embedding_dim, config.num_heads)
 
-        self.outnorm = MultiHeadLayerNorm(ndim=config.embedding_dim, weight=True, bias=False)
+        self.outnorm = MultiHeadLayerNorm(ndim=config.embedding_dim, weight=True, bias=config.bias)
 
         self.register_buffer(
             "causal_mask",

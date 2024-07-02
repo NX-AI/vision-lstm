@@ -11,8 +11,8 @@ from tqdm import tqdm
 
 def parse_args():
     parser = ArgumentParser()
-    parser.add_argument("--data", type=str, required=True)
-    parser.add_argument("--name", type=str, required=True)
+    parser.add_argument("--data", type=str, required=True, help="path to imagenet-1k validation set")
+    parser.add_argument("--name", type=str, default="vil2-tiny")
     parser.add_argument("--device", type=str, default="cuda:0")
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--num_workers", type=int, default=10)

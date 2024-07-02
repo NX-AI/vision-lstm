@@ -29,7 +29,7 @@ class SingleModel(ModelBase):
             if self.allow_frozen_train_mode:
                 self.logger.info(
                     f"model.is_frozen=True and optim_ctor is None but this is ok "
-                    f"(allow_frozen_train_mode=True -> model is probably an EMA model)"
+                    f"(allow_frozen_train_mode=True -> model is e.g. an EMA model or a model without parameters)"
                 )
             else:
                 assert self.optim_ctor is None, "model.is_frozen=True but model.optim_ctor is not None"

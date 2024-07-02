@@ -17,6 +17,7 @@ from ...components.linear_headwise import (
 )
 from ...utils import UpProjConfigMixin
 import math
+from vislstm.modules.sequence_conv2d import SequenceConv2d
 
 @dataclass
 class mLSTMLayerConfig(UpProjConfigMixin):
@@ -29,6 +30,9 @@ class mLSTMLayerConfig(UpProjConfigMixin):
     sharedirs: bool = False
     alternation: str = None
     layerscale: float = None
+    use_conv2d: bool = False
+    use_v_conv: bool = False
+    share_conv: bool = True
 
     # will be set toplevel config
     embedding_dim: int = -1
@@ -82,18 +86,63 @@ class mLSTMLayer(nn.Module):
             )
         )
 
-        self.conv1d = CausalConv1d(
-            config=CausalConv1dConfig(
-                feature_dim=self.config._inner_embedding_dim,
-                kernel_size=self.config.conv1d_kernel_size,
+        if self.config.use_conv2d:
+            assert not self.config.quaddirectional
+            assert self.config.conv1d_kernel_size % 2 == 1
+            if self.config.share_conv:
+                self.conv1d = SequenceConv2d(
+                    in_channels=self.config._inner_embedding_dim,
+                    out_channels=self.config._inner_embedding_dim,
+                    kernel_size=self.config.conv1d_kernel_size,
+                    padding=self.config.conv1d_kernel_size // 2,
+                    groups=self.config._inner_embedding_dim,
+                    bias=True,
+                )
+                self.conv1d_k = None
+                self.conv1d_v = None
+            else:
+                self.conv1d = SequenceConv2d(
+                    in_channels=self.config._inner_embedding_dim,
+                    out_channels=self.config._inner_embedding_dim,
+                    kernel_size=self.config.conv1d_kernel_size,
+                    padding=self.config.conv1d_kernel_size // 2,
+                    groups=self.config._inner_embedding_dim,
+                    bias=True,
+                )
+                self.conv1d_k = SequenceConv2d(
+                    in_channels=self.config._inner_embedding_dim,
+                    out_channels=self.config._inner_embedding_dim,
+                    kernel_size=self.config.conv1d_kernel_size,
+                    padding=self.config.conv1d_kernel_size // 2,
+                    groups=self.config._inner_embedding_dim,
+                    bias=True,
+                )
+                if self.config.use_v_conv:
+                    self.conv1d_v = SequenceConv2d(
+                        in_channels=self.config._inner_embedding_dim,
+                        out_channels=self.config._inner_embedding_dim,
+                        kernel_size=self.config.conv1d_kernel_size,
+                        padding=self.config.conv1d_kernel_size // 2,
+                        groups=self.config._inner_embedding_dim,
+                        bias=True,
+                    )
+                else:
+                    self.conv1d_v = None
+        else:
+            assert self.config.share_conv
+            self.conv1d = CausalConv1d(
+                config=CausalConv1dConfig(
+                    feature_dim=self.config._inner_embedding_dim,
+                    kernel_size=self.config.conv1d_kernel_size,
+                )
             )
-        )
         self.conv_act_fn = nn.SiLU()
         self.mlstm_cell = mLSTMCell(
             config=mLSTMCellConfig(
                 context_length=self.config.context_length,
                 embedding_dim=self.config._inner_embedding_dim,
                 num_heads=self.config.num_heads,
+                bias=self.config.bias,
             )
         )
         self.ogate_act_fn = nn.SiLU()
@@ -123,12 +172,23 @@ class mLSTMLayer(nn.Module):
                     bias=self.config.bias,
                 )
             )
-            self.conv1d_rev = CausalConv1d(
-                config=CausalConv1dConfig(
-                    feature_dim=self.config._inner_embedding_dim,
+            assert self.config.share_conv
+            if self.config.use_conv2d:
+                self.conv1d_rev = SequenceConv2d(
+                    in_channels=self.config._inner_embedding_dim,
+                    out_channels=self.config._inner_embedding_dim,
                     kernel_size=self.config.conv1d_kernel_size,
+                    padding=self.config.conv1d_kernel_size // 2,
+                    groups=self.config._inner_embedding_dim,
+                    bias=True,
                 )
-            )
+            else:
+                self.conv1d_rev = CausalConv1d(
+                    config=CausalConv1dConfig(
+                        feature_dim=self.config._inner_embedding_dim,
+                        kernel_size=self.config.conv1d_kernel_size,
+                    )
+                )
             self.mlstm_cell_rev = mLSTMCell(
                 config=mLSTMCellConfig(
                     context_length=self.config.context_length,
@@ -276,11 +336,27 @@ class mLSTMLayer(nn.Module):
             raise NotImplementedError
 
         # mlstm branch
-        x_mlstm_conv = self.conv1d(x_mlstm)
-        x_mlstm_conv_act = self.conv_act_fn(x_mlstm_conv)
-        q = self.q_proj(x_mlstm_conv_act)
-        k = self.k_proj(x_mlstm_conv_act)
-        v = self.v_proj(x_mlstm)
+        x_mlstm_conv_act = self.conv_act_fn(self.conv1d(x_mlstm))
+        if self.config.share_conv:
+            x_mlstm_conv_act_q = x_mlstm_conv_act
+            x_mlstm_conv_act_k = x_mlstm_conv_act
+            if self.config.use_v_conv:
+                x_mlstm_conv_act_v = x_mlstm_conv_act
+            else:
+                x_mlstm_conv_act_v = None
+        else:
+            x_mlstm_conv_act_q = x_mlstm_conv_act
+            x_mlstm_conv_act_k = self.conv_act_fn(self.conv1d_k(x_mlstm))
+            if self.config.use_v_conv:
+                x_mlstm_conv_act_v = self.conv_act_fn(self.conv1d_v(x_mlstm))
+            else:
+                x_mlstm_conv_act_v = None
+        q = self.q_proj(x_mlstm_conv_act_q)
+        k = self.k_proj(x_mlstm_conv_act_k)
+        if self.config.use_v_conv:
+            v = self.v_proj(x_mlstm_conv_act_v)
+        else:
+            v = self.v_proj(x_mlstm)
         h_tilde_state = self.mlstm_cell(q=q, k=k, v=v)
         h_tilde_state_skip = h_tilde_state + (self.learnable_skip * x_mlstm_conv_act)
 

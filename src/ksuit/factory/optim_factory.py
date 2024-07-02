@@ -18,8 +18,9 @@ class OptimFactory(SingleFactory):
             if key in kwargs:
                 wrapped_optim_kwargs[key] = kwargs.pop(key)
 
+        module_names = [module_name.format(kind=kind) for module_name in self.module_names]
         torch_optim_ctor = ctor_from_name(
-            module_names=["torch.optim"],
+            module_names=module_names,
             type_name=kind,
             **kwargs,
         )

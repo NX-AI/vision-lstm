@@ -36,6 +36,27 @@ def interpolate_sincos(embed, seqlens, mode="bicubic"):
     return embed
 
 
+class SequenceConv2d(nn.Conv2d):
+    def __init__(self, *args, seqlens=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.seqlens = seqlens
+
+    def forward(self, x):
+        assert x.ndim == 3
+        if self.seqlens is None:
+            # assuming square input
+            h = math.sqrt(x.size(1))
+            assert h.is_integer()
+            h = int(h)
+        else:
+            assert len(self.seqlens) == 2
+            h = self.seqlens[0]
+        x = einops.rearrange(x, "b (h w) d -> b d h w", h=h)
+        x = super().forward(x)
+        x = einops.rearrange(x, "b d h w -> b (h w) d")
+        return x
+
+
 # from kappamodules.vit import VitPatchEmbed
 class VitPatchEmbed(nn.Module):
     def __init__(self, dim, num_channels, resolution, patch_size, stride=None, init_weights="xavier_uniform"):

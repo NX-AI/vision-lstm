@@ -6,12 +6,23 @@ from .initializer_base import InitializerBase
 
 
 class CheckpointInitializer(InitializerBase):
-    def __init__(self, stage_id, model_name, checkpoint, load_optim, model_info=None, stage_name=None, **kwargs):
+    def __init__(
+            self,
+            stage_id,
+            model_name,
+            checkpoint,
+            load_optim,
+            model_info=None,
+            stage_name=None,
+            pop_ckpt_kwargs_keys=None,
+            **kwargs,
+    ):
         super().__init__(**kwargs)
         self.stage_id = stage_id
         self.model_name = model_name
         self.load_optim = load_optim
         self.model_info = model_info
+        self.pop_ckpt_kwargs_keys = pop_ckpt_kwargs_keys or []
         self.stage_name = stage_name or self.path_provider.stage_name
 
         # checkpoint can be a string (e.g. "best_accuracy" for initializing from a model saved by BestModelLogger)
@@ -37,6 +48,10 @@ class CheckpointInitializer(InitializerBase):
         sd = torch.load(ckpt_uri, map_location=torch.device("cpu"))
         kwargs = sd["ctor_kwargs"]
         self.logger.info(f"loaded model kwargs from {ckpt_uri}")
+        if len(self.pop_ckpt_kwargs_keys) > 0:
+            self.logger.info(f"removing {self.pop_ckpt_kwargs_keys} from ckpt kwargs")
+            for key in self.pop_ckpt_kwargs_keys:
+                kwargs.pop(key)
         return kwargs
 
     def init_optim(self, model):

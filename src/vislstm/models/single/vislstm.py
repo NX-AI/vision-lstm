@@ -1,16 +1,20 @@
-import numpy as np
 import einops
+import numpy as np
 import torch
+import torch.nn.functional as F
 from kappamodules.functional.pos_embed import interpolate_sincos
+from kappamodules.init import init_xavier_uniform_zero_bias
 from kappamodules.vit import VitPatchEmbed, VitPosEmbed2d, VitClassTokens
 from torch import nn
 
 from vislstm.modules.xlstm import create_block_stack
 from ksuit.factory import MasterFactory
 from ksuit.models import SingleModel
+from ksuit.models.poolings import ToImage
 from ksuit.optim.param_group_modifiers import WeightDecayByNameModifier
 from ksuit.utils.formatting_utils import list_to_string
 from ksuit.utils.param_checking import to_ntuple
+
 
 class VisLSTM(SingleModel):
     def __init__(
@@ -25,16 +29,21 @@ class VisLSTM(SingleModel):
             bidirectional=False,
             quaddirectional=False,
             sharedirs=False,
-            mode=None,
+            mode="features",
             layerscale=None,
             pooling=None,
             alternation=None,
             dropout_rate=0.0,
             drop_path_rate=0.0,
-            drop_path_decay=True,
+            drop_path_decay=False,
             proj_factor=2.0,
             add_post_blocks_norm=True,
-            disable_mask=False,
+            conv1d_kernel_size=4,
+            use_conv2d=False,
+            use_v_conv=False,
+            share_conv=True,
+            add_pre_head_norm=True,
+            bias=False,
             eps=1e-6,
             **kwargs,
     ):
@@ -45,7 +54,11 @@ class VisLSTM(SingleModel):
         self.dim = dim
         self.depth = depth
         self.mode = mode
-        self.pooling = MasterFactory.get("pooling").create(pooling, static_ctx=self.static_ctx)
+        self.pooling = MasterFactory.get("pooling").create(
+            pooling,
+            static_ctx=self.static_ctx,
+            optional_kwargs=dict(dim=dim),
+        )
         self.eps = eps
         self.pos_embed_mode = pos_embed_mode
         self.bidirectional = bidirectional
@@ -96,6 +109,11 @@ class VisLSTM(SingleModel):
             dropout_rate=dropout_rate,
             proj_factor=proj_factor,
             add_post_blocks_norm=add_post_blocks_norm,
+            conv1d_kernel_size=conv1d_kernel_size,
+            use_conv2d=use_conv2d,
+            bias=bias,
+            use_v_conv=use_v_conv,
+            share_conv=share_conv,
         )
         # stochastic depth
         if drop_path_decay and drop_path_rate > 0.:
@@ -107,17 +125,18 @@ class VisLSTM(SingleModel):
         for i in range(depth):
             self.xlstm.blocks[i].drop_path1.drop_prob = dpr[i]
 
-        if disable_mask:
-            for i in range(depth):
-                no_mask = torch.ones_like(self.xlstm.blocks[i].xlstm.mlstm_cell.causal_mask)
-                self.xlstm.blocks[i].xlstm.mlstm_cell.causal_mask = no_mask
-
-
-        if mode is None:
+        if mode == "features":
             assert self.output_shape is None
-            assert self.pooling is None
             self.head = None
             self.output_shape = (self.patch_embed.num_patches + self.num_cls_tokens, dim)
+            if self.pooling is not None:
+                self.output_shape = self.pooling.get_output_shape(self.output_shape)
+        elif mode == "segmentation":
+            assert self.output_shape is not None and len(self.output_shape) == 3
+            assert self.cls_tokens is None
+            self.pooling = ToImage(static_ctx=self.static_ctx)
+            self.head = nn.Conv2d(dim, self.output_shape[0], kernel_size=1)
+            init_xavier_uniform_zero_bias(self.head)
         elif mode == "classifier":
             assert self.output_shape is not None and len(self.output_shape) == 1
             if self.cls_tokens is not None:
@@ -129,7 +148,7 @@ class VisLSTM(SingleModel):
             else:
                 raise NotImplementedError
             self.head = nn.Sequential(
-                nn.LayerNorm(head_in_dim, eps=eps),
+                nn.LayerNorm(head_in_dim, eps=eps) if add_pre_head_norm else nn.Identity(),
                 nn.Linear(head_in_dim, self.output_shape[0]),
             )
             # following MAE https://github.com/facebookresearch/mae/blob/main/main_finetune.py#L257
@@ -146,8 +165,25 @@ class VisLSTM(SingleModel):
             if old_pos_embed.shape != self.pos_embed.embed.shape:
                 self.logger.info(f"interpolate pos_embed: {old_pos_embed.shape} -> {self.pos_embed.embed.shape}")
                 state_dict["pos_embed.embed"] = interpolate_sincos(embed=old_pos_embed, seqlens=self.pos_embed.seqlens)
+        if self.mode == "features":
+            # remove head (e.g. supervised pre-training -> UperNet semantic segmentation)
+            for key in list(state_dict.keys()):
+                if key.startswith("head."):
+                    state_dict.pop(key)
+                if "post_blocks_norm" in key:
+                    state_dict.pop(key)
         if self.mode == "classifier":
             allowed_missing_keys += ["head.0.weight", "head.0.bias", "head.1.weight", "head.1.bias"]
+            # reinitialize head for transfer classification
+            if "head.1.bias" in state_dict and state_dict["head.1.bias"].shape != self.head[1].bias.shape:
+                self.logger.info(f"classification head shape doesnt match -> reinitialize classification head")
+                state_dict.pop("head.1.weight")
+                state_dict.pop("head.1.bias")
+        if self.mode == "segmentation":
+            # head is segmentation head if ndim==4 -> otherwise remove head (e.g. from supervised pre-training)
+            if "head.weight" not in state_dict or state_dict["head.weight"].ndim != 4:
+                allowed_missing_keys += ["head.weight", "head.bias"]
+                state_dict = {key: value for key, value in state_dict.items() if not key.startswith("head.")}
         # LEGACY:
         state_dict = {k: v for k, v in state_dict.items() if "causal_mask" not in k}
         missing_keys, unexpected_keys = super().load_state_dict(state_dict=state_dict, strict=False)
@@ -201,6 +237,11 @@ class VisLSTM(SingleModel):
         if self.head is not None:
             x = self.head(x)
 
+        if self.mode == "segmentation":
+            # interpolate is not supported in bfloat16
+            with torch.autocast(device_type=str(x.device).split(":")[0], enabled=False):
+                x = F.interpolate(x.float(), size=self.output_shape[1:], mode="bilinear", align_corners=False)
+
         outputs["main"] = x
         return outputs
 
@@ -208,3 +249,7 @@ class VisLSTM(SingleModel):
         assert self.mode == "classifier"
         outputs = self.forward(*args, **kwargs)
         return dict(main=outputs["main"])
+
+    def segment(self, x):
+        assert self.mode == "segmentation"
+        return self.forward(x)["main"]

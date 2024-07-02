@@ -1,10 +1,10 @@
-from pathlib import Path
+import math
 
-import einops
 import torch
 
-from ksuit.initializers.base import InitializerBase
 from ksuit.distributed import is_rank0, barrier
+from ksuit.initializers.base import InitializerBase
+
 
 class Deit3PretrainedInitializer(InitializerBase):
     """ initialize with weights from a state_dict loaded via torchhub """
@@ -68,7 +68,9 @@ class Deit3PretrainedInitializer(InitializerBase):
         sd = sd["model"]
         assert "pos_embed" in sd
         pos_embed = sd.pop("pos_embed")
-        sd["pos_embed.embed"] = pos_embed.reshape(*model.pos_embed.embed.shape)
+        assert math.sqrt(pos_embed.size(1)).is_integer()
+        h = w = int(math.sqrt(pos_embed.size(1)))
+        sd["pos_embed.embed"] = pos_embed.reshape(1, h, w, -1)
         # kappamodules has different key for CLS token
         sd["cls_tokens.tokens"] = sd.pop("cls_token")
         # norm + head is merged into sequential

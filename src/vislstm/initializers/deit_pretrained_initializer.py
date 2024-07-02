@@ -15,6 +15,8 @@ class DeitPretrainedInitializer(InitializerBase):
 
     def _get_model_kwargs(self):
         model = self.model.lower().replace("_", "")
+        if "tiny" in model:
+            return dict(patch_size=16, dim=192, num_attn_heads=3, depth=12)
         if "small" in model:
             return dict(patch_size=16, dim=384, num_attn_heads=6, depth=12)
         if "base" in model:
@@ -30,7 +32,9 @@ class DeitPretrainedInitializer(InitializerBase):
 
     def init_weights(self, model):
         self.logger.info(f"loading DeiT weights of model '{self.model}'")
-        if self.model == "small_res224_in1k":
+        if self.model == "tiny_res224_in1k":
+            url = "https://dl.fbaipublicfiles.com/deit/deit_tiny_patch16_224-a1311bcf.pth"
+        elif self.model == "small_res224_in1k":
             url = "https://dl.fbaipublicfiles.com/deit/deit_small_patch16_224-cd65a155.pth"
         elif self.model == "base_res224_in1k":
             url = "https://dl.fbaipublicfiles.com/deit/deit_base_patch16_224-b5f2ef4d.pth"
@@ -47,7 +51,7 @@ class DeitPretrainedInitializer(InitializerBase):
         sd = sd["model"]
         assert "pos_embed" in sd
         pos_embed = sd.pop("pos_embed")
-        sd["pos_embed.embed"] = pos_embed[:, 1:].reshape(*model.pos_embed.embed.shape)
+        sd["pos_embed.embed"] = pos_embed[:, 1:].reshape(1, 14, 14, model.pos_embed.embed.shape[-1])
         # kappamodules has different key for CLS token + no pos_embed for CLS
         sd["cls_tokens.tokens"] = sd.pop("cls_token") + pos_embed[:, :1]
         # norm + head is merged into sequential

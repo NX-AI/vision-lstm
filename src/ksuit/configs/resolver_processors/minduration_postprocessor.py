@@ -47,15 +47,14 @@ class MinDurationPostProcessor(kc.Processor):
                     if "end_checkpoint" in schedule:
                         self._process_checkpoint(schedule, "end_checkpoint")
 
-    @staticmethod
-    def _process_checkpoint(parent, parent_accessor):
+    def _process_checkpoint(self, parent, parent_accessor):
         # check if checkpoint is string checkpoint
         if not isinstance(parent[parent_accessor], dict):
             return
         # replace epoch/update/sample checkpoint
         if "epoch" in parent[parent_accessor]:
-            parent[parent_accessor] = dict(epoch=TEST_RUN_EPOCHS)
+            parent[parent_accessor] = dict(epoch=self.max_epochs)
         if "update" in parent[parent_accessor]:
-            parent[parent_accessor] = dict(update=TEST_RUN_UPDATES)
+            parent[parent_accessor] = dict(update=self.max_updates)
         if "sample" in parent[parent_accessor]:
-            parent[parent_accessor] = dict(sample=TEST_RUN_SAMPLES)
+            parent[parent_accessor] = dict(sample=self.max_samples)
