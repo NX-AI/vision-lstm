@@ -1,0 +1,2115 @@
+06-11 10:33:30 I ------------------
+06-11 10:33:30 I stage_id: qwdfcq26
+06-11 10:33:30 I python main_train.py --hp examples/vislstm/yamls/deit3/pretrain/lstm_6M16_e800_bialter_bilatflat_conv2d3_lr1e3_res192_bias.yaml --resume_stage_id j94bovmo
+06-11 10:33:30 I ------------------
+06-11 10:33:30 I VERSION CHECK
+06-11 10:33:30 I executable: .../bin/python
+06-11 10:33:30 I python version: 3.9.19
+06-11 10:33:30 I torch version: 2.2.2+cu121
+06-11 10:33:30 I torch.cuda version: 12.1
+06-11 10:33:30 I torchvision.version: 0.17.2+cu121
+06-11 10:33:30 I torchmetrics version: 1.4.0
+06-11 10:33:30 I kappaschedules version: 0.0.31
+06-11 10:33:30 I kappamodules version: 0.1.70
+06-11 10:33:30 I ------------------
+06-11 10:33:30 I SYSTEM INFO
+06-11 10:33:30 I host name: ...
+06-11 10:33:30 I OS: ...
+06-11 10:33:30 I OS version: ...
+06-11 10:33:32 I CUDA version: 12.5
+06-11 10:33:32 I current commit hash: cb84a8b1b9f535c4dbba1caa16145bcd8926a9d9
+06-11 10:33:32 I latest git tag:
+06-11 10:33:32 I initialized process rank=0 local_rank=0 pid=1030411 hostname=...
+06-11 10:33:32 I total_cpu_count: 16
+06-11 10:33:32 I ------------------
+06-11 10:33:32 I STATIC CONFIG
+06-11 10:33:32 I account_name: ...
+06-11 10:33:32 I output_path: .../save
+06-11 10:33:32 I local_dataset_path: /tmp
+06-11 10:33:32 I available space in local_dataset_path:
+06-11 10:33:33 I Filesystem      Size  Used Avail Use% Mounted on
+06-11 10:33:33 I tmpfs...
+06-11 10:33:33 I ------------------
+06-11 10:33:33 I CLI ARGS
+06-11 10:33:33 I hp: examples/vislstm/yamls/deit3/pretrain/lstm_6M16_e800_bialter_bilatflat_conv2d3_lr1e3_res192_bias.yaml
+06-11 10:33:33 I accelerator: gpu
+06-11 10:33:33 I testrun: False
+06-11 10:33:33 I minmodelrun: False
+06-11 10:33:33 I mindatarun: False
+06-11 10:33:33 I mindurationrun: False
+06-11 10:33:33 I static_config_uri: static_config.yaml
+06-11 10:33:33 I resume_stage_id: j94bovmo
+06-11 10:33:33 I ------------------
+06-11 10:33:33 I DIST CONFIG
+06-11 10:33:33 I rank: 0
+06-11 10:33:33 I local_rank: 0
+06-11 10:33:33 I world_size: 16
+06-11 10:33:33 I nodes: 2
+06-11 10:33:33 I backend: nccl
+06-11 10:33:33 I slurm job id: ...
+06-11 10:33:33 I hostnames: ...
+06-11 10:33:33 I ------------------
+master_factory_base_path: vislstm
+stage_name: in1k
+datasets:
+  train:
+    kind: imagenet1k
+    split: train
+    sample_wrappers:
+    - kind: x_transform_wrapper
+      transform:
+      - kind: random_resized_crop
+        size: 192
+        scale:
+        - 0.08
+        - 1.0
+        interpolation: bicubic
+      - kind: random_horizontal_flip
+      - kind: transforms.three_augment
+        blur_sigma:
+        - 0.1
+        - 2.0
+      - kind: color_jitter
+        brightness: 0.3
+        contrast: 0.3
+        saturation: 0.3
+        hue: 0.0
+      - kind: imagenet1k_norm
+    - kind: one_hot_wrapper
+    collators:
+    - kind: mix_collator
+      mixup_alpha: 0.8
+      cutmix_alpha: 1.0
+      mixup_p: 0.5
+      cutmix_p: 0.5
+      apply_mode: batch
+      lamb_mode: batch
+      shuffle_mode: flip
+  val:
+    kind: imagenet1k
+    split: val
+    sample_wrappers:
+    - kind: x_transform_wrapper
+      transform:
+      - kind: resize
+        size: 192
+        interpolation: bicubic
+      - kind: center_crop
+        size: 192
+      - kind: imagenet1k_norm
+model:
+  kind: models.single.vislstm
+  patch_size: 16
+  dim: 192
+  depth: 24
+  bidirectional: false
+  alternation: bidirectional
+  conv1d_kernel_size: 3
+  use_conv2d: true
+  bias: true
+  pos_embed_mode: learnable
+  mode: classifier
+  pooling:
+    kind: bilateral
+    aggregate: flatten
+  optim:
+    kind: adamw
+    lr: 0.001
+    betas:
+    - 0.9
+    - 0.999
+    weight_decay: 0.05
+    clip_grad_norm: 1.0
+    schedule:
+      kind: linear_warmup_cosine_decay_schedule
+      warmup_epochs: 5
+      end_value: 1.0e-06
+    lr_scaler:
+      kind: linear_lr_scaler
+      divisor: 1024
+trainer:
+  kind: classification_trainer
+  precision: bfloat16
+  backup_precision: float16
+  max_epochs: 800
+  effective_batch_size: 2048
+  log_every_n_epochs: 1
+  use_torch_compile: true
+  callbacks:
+  - kind: checkpoint_callback
+  - kind: checkpoint_callback
+    every_n_epochs: 10
+    save_weights: false
+    save_latest_weights: true
+    save_latest_optim: true
+  - kind: offline_accuracy_callback
+    every_n_epochs: 1
+    dataset_key: val
+  initializer:
+    kind: resume_initializer
+    stage_id: j94bovmo
+    checkpoint: latest
+06-11 10:33:33 I copied unresolved hp to .../hp_unresolved.yaml
+06-11 10:33:33 I dumped resolved hp to .../hp_resolved.yaml
+06-11 10:33:33 I ------------------
+06-11 10:33:33 I training stage 'in1k'
+06-11 10:33:33 I using different seeds per process (seed+rank)
+06-11 10:33:33 I set seed to 0
+06-11 10:33:33 I ------------------
+06-11 10:33:33 I initializing datasets
+06-11 10:33:33 I initializing train
+06-11 10:33:33 I extracting 1000 zips from ... to ...
+06-11 10:34:18 I finished copying data from global to local
+06-11 10:34:20 I instantiating sample_wrapper x_transform_wrapper
+06-11 10:34:20 I instantiating sample_wrapper one_hot_wrapper
+06-11 10:34:20 I initializing val
+06-11 10:34:20 I extracting 1000 zips from ... to ...
+06-11 10:34:22 I finished copying data from global to local
+06-11 10:34:22 I instantiating sample_wrapper x_transform_wrapper
+06-11 10:34:22 I ------------------
+06-11 10:34:22 I initializing trainer
+06-11 10:34:22 I using precision: torch.bfloat16 (desired=bfloat16 backup=float16)
+06-11 10:34:22 I main_sampler: DistributedSampler(num_repeats=1, shuffle=True)
+06-11 10:34:22 I loaded checkpoint from trainer_state_dict: {'epoch': 660, 'update': 412500, 'sample': 844800000, 'callback_state_dicts': [None, None, None]}
+06-11 10:34:22 I ------------------
+06-11 10:34:22 I creating model
+06-11 10:34:22 I input_shape: (3, 192, 192)
+06-11 10:34:22 I pos_embed.is_learnable=True
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+mLSTMLayerConfig(proj_factor=2.0, round_proj_up_dim_up=True, round_proj_up_to_multiple_of=64, _proj_up_dim=384, conv1d_kernel_size=3, qkv_proj_blocksize=4, num_heads=4, bidirectional=False, quaddirectional=False, sharedirs=False, alternation='bidirectional', layerscale=None, use_conv2d=True, embedding_dim=192, bias=True, dropout=0.0, context_length=144, _num_blocks=1, _inner_embedding_dim=384)
+06-11 10:34:23 I drop_path_rate: 0.0
+06-11 10:34:23 I model:
+VisLSTM(
+  (pooling): Bilateral(aggregate=flatten)
+  (patch_embed): VitPatchEmbed(
+    (proj): Conv2d(3, 192, kernel_size=(16, 16), stride=(16, 16))
+  )
+  (pos_embed): VitPosEmbed2d()
+  (xlstm): xLSTMBlockStack(
+    (blocks): ModuleList(
+      (0-23): 24 x mLSTMBlock(
+        (drop_path1): DropPath(drop_prob=0.000)
+        (xlstm_norm): LayerNorm()
+        (xlstm): mLSTMLayer(
+          (proj_up): Linear(in_features=192, out_features=768, bias=True)
+          (q_proj): LinearHeadwiseExpand(in_features=384, num_heads=96, expand_factor_up=1, bias=True, trainable_weight=True, trainable_bias=True, )
+          (k_proj): LinearHeadwiseExpand(in_features=384, num_heads=96, expand_factor_up=1, bias=True, trainable_weight=True, trainable_bias=True, )
+          (v_proj): LinearHeadwiseExpand(in_features=384, num_heads=96, expand_factor_up=1, bias=True, trainable_weight=True, trainable_bias=True, )
+          (conv1d): SequenceConv2d(384, 384, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=384)
+          (conv_act_fn): SiLU()
+          (mlstm_cell): mLSTMCell(
+            (igate): Linear(in_features=1152, out_features=4, bias=True)
+            (fgate): Linear(in_features=1152, out_features=4, bias=True)
+            (outnorm): MultiHeadLayerNorm()
+          )
+          (ogate_act_fn): SiLU()
+          (proj_down): Linear(in_features=384, out_features=192, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+          (layerscale): Identity()
+        )
+      )
+    )
+    (post_blocks_norm): LayerNorm()
+  )
+  (head): Sequential(
+    (0): LayerNorm((384,), eps=1e-06, elementwise_affine=True)
+    (1): Linear(in_features=384, out_features=1000, bias=True)
+  )
+)
+06-11 10:34:23 I vislstm initialize optimizer
+06-11 10:34:23 I base lr: 1e-3
+06-11 10:34:23 I scaled lr: 2e-3
+06-11 10:34:23 I lr_scaler=LinearLrScaler(divisor=1024)
+06-11 10:34:23 I lr_scale_factor=2048
+06-11 10:34:23 I exclude_bias_from_wd=True exclude_norm_from_wd=True param_group_modifiers=[WeightDecayByNameModifier(name=pos_embed.embed)]
+06-11 10:34:23 I using 2 param groups:
+06-11 10:34:23 I len(params)=194
+06-11 10:34:23 I weight_decay=0.0 len(params)=319
+06-11 10:34:23 I ------------------
+06-11 10:34:23 I loading trainer/model state for resuming
+06-11 10:34:23 I loading state from checkpoint j94bovmo/in1k/latest
+06-11 10:34:23 I loaded trainer checkpoint .../in1k/j94bovmo/checkpoints/trainer cp=latest.th
+06-11 10:34:23 I loaded weights of vislstm from .../in1k/j94bovmo/checkpoints/vislstm cp=latest model.th
+06-11 10:34:23 I loaded optimizer of vislstm from .../in1k/j94bovmo/checkpoints/vislstm cp=latest optim.th
+06-11 10:34:23 I added default DatasetStatsCallback
+06-11 10:34:23 I added default ParamCountCallback
+06-11 10:34:23 I added default CopyPreviousConfigCallback
+06-11 10:34:23 I added default CopyPreviousSummaryCallback
+06-11 10:34:23 I added default ProgressCallback(every_n_epochs=1)
+06-11 10:34:23 I added default TrainTimeCallback(every_n_epochs=1)
+06-11 10:34:23 I added default OnlineLossCallback(every_n_epochs=1)
+06-11 10:34:23 I added default LrCallback(every_n_updates=50)
+06-11 10:34:23 I added default FreezerCallback(every_n_updates=50)
+06-11 10:34:23 I added default OnlineLossCallback(every_n_updates=50)
+06-11 10:34:23 I replacing BatchNorm layers with SyncBatchNorm
+06-11 10:34:23 I wrapping model with torch.compile
+06-11 10:34:24 I ------------------
+06-11 10:34:24 I PREPARE TRAINER
+06-11 10:34:24 I calculating batch_size and accumulation_steps (effective_batch_size=2048)
+06-11 10:34:24 I found multi-node setting -> disable automatic batchsize (occasionally hangs)
+06-11 10:34:24 I train_batches per epoch: 625 (world_size=16 batch_size=128)
+06-11 10:34:24 I initializing dataloader
+06-11 10:34:24 I OfflineAccuracyCallback(every_n_epochs=1) registered InterleavedSamplerConfig(every_n_epochs=1) dataset_mode='x class'
+06-11 10:34:24 I created dataloader (batch_size=128 num_workers=15 pin_memory=True total_cpu_count=16 prefetch_factor=2)
+06-11 10:34:24 I concatenated dataset properties:
+06-11 10:34:24 I - mode='index x class' len=1281167 root_dataset=<examples.vislstm.datasets.imagenet1k.Imagenet1k object at 0x14af0812f910>
+06-11 10:34:24 I - mode='x class' len=50000 root_dataset=<examples.vislstm.datasets.imagenet1k.Imagenet1k object at 0x14aeb98edfa0>
+06-11 10:34:24 I ------------------
+06-11 10:34:24 I BEFORE TRAINING
+06-11 10:34:24 I train: 1281167 samples
+06-11 10:34:24 I val: 50000 samples
+06-11 10:34:24 I parameter counts (trainable | frozen)
+06-11 10:34:24 I 6,381,544 | 0 | vislstm
+06-11 10:34:24 I estimated checkpoint size: 76.5MB
+06-11 10:34:24 I estimated weight checkpoint size: 25.5MB
+06-11 10:34:24 I estimated optim checkpoint size: 51.0MB
+06-11 10:34:24 I estimated size for 1 checkpoints: 25.5MB
+06-11 10:34:24 I estimated checkpoint size: 76.5MB
+06-11 10:34:24 I estimated weight checkpoint size: 25.5MB
+06-11 10:34:24 I estimated optim checkpoint size: 51.0MB
+06-11 10:34:24 I estimated size for 81 checkpoints: 0.0B
+06-11 10:34:24 I ------------------
+06-11 10:34:24 I DatasetStatsCallback
+06-11 10:34:24 I ParamCountCallback
+06-11 10:34:24 I CopyPreviousConfigCallback
+06-11 10:34:24 I CopyPreviousSummaryCallback
+06-11 10:34:24 I ProgressCallback(every_n_epochs=1)
+06-11 10:34:24 I TrainTimeCallback(every_n_epochs=1)
+06-11 10:34:24 I OnlineLossCallback(every_n_epochs=1)
+06-11 10:34:24 I LrCallback(every_n_updates=50)
+06-11 10:34:24 I FreezerCallback(every_n_updates=50)
+06-11 10:34:24 I OnlineLossCallback(every_n_updates=50)
+06-11 10:34:24 I OnlineAccuracyCallback(every_n_updates=50)
+06-11 10:34:24 I OnlineAccuracyCallback(every_n_epochs=1)
+06-11 10:34:24 I CheckpointCallback()
+06-11 10:34:24 I CheckpointCallback(every_n_epochs=10)
+06-11 10:34:24 I OfflineAccuracyCallback(every_n_epochs=1)
+06-11 10:34:24 I ------------------
+06-11 10:34:24 I START TRAINING
+06-11 10:34:24 I initializing dataloader workers
+06-11 10:34:26 I initialized dataloader workers
+[rank0]:[2024-06-11 10:34:28,236] [0/0] torch._dynamo.variables.torch: [WARNING] Profiler function <class 'torch.autograd.profiler.record_function'> will be ignored
+.../site-packages/torch/autograd/__init__.py:266: UserWarning: Grad strides do not match bucket view strides. This may indicate grad was not created according to the gradient layout contract, or that the param's strides changed since DDP was constructed.  This is not an error, but may impair performance.
+grad.sizes() = [384, 1, 3, 3], strides() = [9, 3, 3, 1]
+bucket_view.sizes() = [384, 1, 3, 3], strides() = [9, 9, 3, 1] (Triggered internally at ../torch/csrc/distributed/c10d/reducer.cpp:322.)
+  Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+06-11 10:36:53 I 0 unused parameters
+[rank0]:[2024-06-11 10:36:57,409] torch._dynamo.convert_frame: [WARNING] torch._dynamo hit config.cache_size_limit (8)
+[rank0]:[2024-06-11 10:36:57,409] torch._dynamo.convert_frame: [WARNING]    function: 'forward' .../site-packages/kappamodules/layers/drop_path.py:40)
+[rank0]:[2024-06-11 10:36:57,409] torch._dynamo.convert_frame: [WARNING]    last reason: ___guarded_code.valid
+[rank0]:[2024-06-11 10:36:57,409] torch._dynamo.convert_frame: [WARNING] To log all recompilation reasons, use TORCH_LOGS="recompiles".
+[rank0]:[2024-06-11 10:36:57,409] torch._dynamo.convert_frame: [WARNING] To diagnose recompilation issues, see https://pytorch.org/docs/master/compile/troubleshooting.html.
+06-11 10:38:54 I ------------------
+06-11 10:38:54 I Epoch 661/800 (E661_U413125_S846080000)
+06-11 10:38:54 I ETA: 06.11 10.39.51 estimated_duration: 00:05:26.46 time_since_last_log: 00:04:29.73 time_per_update: 00:00:00.00
+06-11 10:38:54 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42,
+ 0.42, 0.42, 0.42, 0.42]
+06-11 10:38:54 I loss/online/main/E1: 2.527552604675293
+06-11 10:38:54 I loss/online/total/E1: 2.527552604675293
+06-11 10:38:54 I accuracy1/online/main/E1: 0.576627
+06-11 10:38:57 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.11
+06-11 10:38:57 I accuracy1/val/main: 0.753460
+06-11 10:38:57 I loss/val/main: 1.0
+06-11 10:40:54 I ------------------
+06-11 10:40:54 I Epoch 662/800 (E662_U413750_S847360000)
+06-11 10:40:54 I ETA: 06.11 10.41.20 estimated_duration: 00:02:25.49 time_since_last_log: 00:02:00.36 time_per_update: 00:00:00.19
+06-11 10:40:54 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 10:40:54 I loss/online/main/E1: 2.5309805870056152
+06-11 10:40:54 I loss/online/total/E1: 2.5309805870056152
+06-11 10:40:54 I accuracy1/online/main/E1: 0.577236
+06-11 10:40:57 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 10:40:57 I accuracy1/val/main: 0.754080
+06-11 10:40:57 I loss/val/main: 0.9921875
+06-11 10:42:54 I ------------------
+06-11 10:42:54 I Epoch 663/800 (E663_U414375_S848640000)
+06-11 10:42:54 I ETA: 06.11 10.43.44 estimated_duration: 00:04:50.14 time_since_last_log: 00:02:00.03 time_per_update: 00:00:00.19
+06-11 10:42:54 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 10:42:54 I loss/online/main/E1: 2.511981964111328
+06-11 10:42:54 I loss/online/total/E1: 2.511981964111328
+06-11 10:42:54 I accuracy1/online/main/E1: 0.579473
+06-11 10:42:57 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 10:42:57 I accuracy1/val/main: 0.755820
+06-11 10:42:57 I loss/val/main: 0.9921875
+06-11 10:44:54 I ------------------
+06-11 10:44:54 I Epoch 664/800 (E664_U415000_S849920000)
+06-11 10:44:54 I ETA: 06.11 10.46.08 estimated_duration: 00:07:14.27 time_since_last_log: 00:01:59.95 time_per_update: 00:00:00.19
+06-11 10:44:54 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 10:44:54 I loss/online/main/E1: 2.5328545570373535
+06-11 10:44:54 I loss/online/total/E1: 2.5328545570373535
+06-11 10:44:54 I accuracy1/online/main/E1: 0.575563
+06-11 10:44:57 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 10:44:57 I accuracy1/val/main: 0.754460
+06-11 10:44:57 I loss/val/main: 1.0
+06-11 10:46:53 I ------------------
+06-11 10:46:53 I Epoch 665/800 (E665_U415625_S851200000)
+06-11 10:46:53 I ETA: 06.11 10.48.30 estimated_duration: 00:09:35.92 time_since_last_log: 00:01:58.25 time_per_update: 00:00:00.18
+06-11 10:46:53 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 10:46:53 I loss/online/main/E1: 2.528545379638672
+06-11 10:46:53 I loss/online/total/E1: 2.528545379638672
+06-11 10:46:53 I accuracy1/online/main/E1: 0.576979
+06-11 10:46:55 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 10:46:55 I accuracy1/val/main: 0.753200
+06-11 10:46:55 I loss/val/main: 0.99609375
+06-11 10:48:54 I ------------------
+06-11 10:48:54 I Epoch 666/800 (E666_U416250_S852480000)
+06-11 10:48:54 I ETA: 06.11 10.50.54 estimated_duration: 00:12:00.33 time_since_last_log: 00:02:00.91 time_per_update: 00:00:00.19
+06-11 10:48:54 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.19, 0.19, 0.19, 0.19, 0.19, 0.19, 0.19, 0.19, 0.19, 0.18, 0.18, 0.19,
+ 0.18, 0.19, 0.19, 0.19]
+06-11 10:48:54 I loss/online/main/E1: 2.514225721359253
+06-11 10:48:54 I loss/online/total/E1: 2.514225721359253
+06-11 10:48:54 I accuracy1/online/main/E1: 0.580114
+06-11 10:48:56 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 10:48:56 I accuracy1/val/main: 0.753320
+06-11 10:48:56 I loss/val/main: 1.0078125
+06-11 10:50:52 I ------------------
+06-11 10:50:52 I Epoch 667/800 (E667_U416875_S853760000)
+06-11 10:50:52 I ETA: 06.11 10.53.15 estimated_duration: 00:14:21.33 time_since_last_log: 00:01:58.42 time_per_update: 00:00:00.18
+06-11 10:50:52 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 10:50:52 I loss/online/main/E1: 2.5165140628814697
+06-11 10:50:52 I loss/online/total/E1: 2.5165140628814697
+06-11 10:50:52 I accuracy1/online/main/E1: 0.579583
+06-11 10:50:54 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 10:50:54 I accuracy1/val/main: 0.754740
+06-11 10:50:54 I loss/val/main: 0.99609375
+06-11 10:52:52 I ------------------
+06-11 10:52:52 I Epoch 668/800 (E668_U417500_S855040000)
+06-11 10:52:52 I ETA: 06.11 10.55.38 estimated_duration: 00:16:44.11 time_since_last_log: 00:02:00.26 time_per_update: 00:00:00.19
+06-11 10:52:52 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 10:52:52 I loss/online/main/E1: 2.5220792293548584
+06-11 10:52:52 I loss/online/total/E1: 2.5220792293548584
+06-11 10:52:52 I accuracy1/online/main/E1: 0.578052
+06-11 10:52:55 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 10:52:55 I accuracy1/val/main: 0.753900
+06-11 10:52:55 I loss/val/main: 1.0
+06-11 10:54:52 I ------------------
+06-11 10:54:52 I Epoch 669/800 (E669_U418125_S856320000)
+06-11 10:54:52 I ETA: 06.11 10.58.00 estimated_duration: 00:19:06.34 time_since_last_log: 00:02:00.16 time_per_update: 00:00:00.19
+06-11 10:54:52 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 10:54:52 I loss/online/main/E1: 2.514119863510132
+06-11 10:54:52 I loss/online/total/E1: 2.514119863510132
+06-11 10:54:52 I accuracy1/online/main/E1: 0.578584
+06-11 10:54:55 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 10:54:55 I accuracy1/val/main: 0.754440
+06-11 10:54:55 I loss/val/main: 1.0
+06-11 10:56:51 I ------------------
+06-11 10:56:51 I Epoch 670/800 (E670_U418750_S857600000)
+06-11 10:56:51 I ETA: 06.11 11.00.21 estimated_duration: 00:21:26.47 time_since_last_log: 00:01:58.76 time_per_update: 00:00:00.19
+06-11 10:56:51 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 10:56:51 I loss/online/main/E1: 2.5124034881591797
+06-11 10:56:51 I loss/online/total/E1: 2.5124034881591797
+06-11 10:56:51 I accuracy1/online/main/E1: 0.579867
+06-11 10:56:51 I saved vislstm to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest model.th
+06-11 10:56:51 I saved vislstm optim to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest optim.th
+06-11 10:56:51 I saved trainer state_dict to .../in1k/qwdfcq26/checkpoints/trainer cp=latest.th
+06-11 10:56:54 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 10:56:54 I accuracy1/val/main: 0.755380
+06-11 10:56:54 I loss/val/main: 0.98828125
+06-11 10:58:51 I ------------------
+06-11 10:58:51 I Epoch 671/800 (E671_U419375_S858880000)
+06-11 10:58:51 I ETA: 06.11 11.02.42 estimated_duration: 00:23:47.53 time_since_last_log: 00:01:59.89 time_per_update: 00:00:00.19
+06-11 10:58:51 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 10:58:51 I loss/online/main/E1: 2.507133960723877
+06-11 10:58:51 I loss/online/total/E1: 2.507133960723877
+06-11 10:58:51 I accuracy1/online/main/E1: 0.579574
+06-11 10:58:53 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 10:58:53 I accuracy1/val/main: 0.755520
+06-11 10:58:53 I loss/val/main: 0.98828125
+06-11 11:00:51 I ------------------
+06-11 11:00:51 I Epoch 672/800 (E672_U420000_S860160000)
+06-11 11:00:51 I ETA: 06.11 11.05.02 estimated_duration: 00:26:07.92 time_since_last_log: 00:01:59.68 time_per_update: 00:00:00.19
+06-11 11:00:51 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:00:51 I loss/online/main/E1: 2.5182065963745117
+06-11 11:00:51 I loss/online/total/E1: 2.5182065963745117
+06-11 11:00:51 I accuracy1/online/main/E1: 0.577852
+06-11 11:00:53 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:00:53 I accuracy1/val/main: 0.755840
+06-11 11:00:53 I loss/val/main: 1.0
+06-11 11:02:51 I ------------------
+06-11 11:02:51 I Epoch 673/800 (E673_U420625_S861440000)
+06-11 11:02:51 I ETA: 06.11 11.07.23 estimated_duration: 00:28:28.53 time_since_last_log: 00:02:00.22 time_per_update: 00:00:00.19
+06-11 11:02:51 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:02:51 I loss/online/main/E1: 2.506516933441162
+06-11 11:02:51 I loss/online/total/E1: 2.506516933441162
+06-11 11:02:51 I accuracy1/online/main/E1: 0.581142
+06-11 11:02:53 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:02:53 I accuracy1/val/main: 0.757620
+06-11 11:02:53 I loss/val/main: 0.98828125
+06-11 11:04:51 I ------------------
+06-11 11:04:51 I Epoch 674/800 (E674_U421250_S862720000)
+06-11 11:04:51 I ETA: 06.11 11.09.42 estimated_duration: 00:30:48.20 time_since_last_log: 00:01:59.78 time_per_update: 00:00:00.19
+06-11 11:04:51 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:04:51 I loss/online/main/E1: 2.5031371116638184
+06-11 11:04:51 I loss/online/total/E1: 2.5031371116638184
+06-11 11:04:51 I accuracy1/online/main/E1: 0.581793
+06-11 11:04:53 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:04:53 I accuracy1/val/main: 0.755440
+06-11 11:04:53 I loss/val/main: 0.9921875
+06-11 11:06:49 I ------------------
+06-11 11:06:49 I Epoch 675/800 (E675_U421875_S864000000)
+06-11 11:06:49 I ETA: 06.11 11.12.00 estimated_duration: 00:33:05.95 time_since_last_log: 00:01:58.51 time_per_update: 00:00:00.18
+06-11 11:06:49 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:06:49 I loss/online/main/E1: 2.494202136993408
+06-11 11:06:49 I loss/online/total/E1: 2.494202136993408
+06-11 11:06:49 I accuracy1/online/main/E1: 0.582808
+06-11 11:06:52 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:06:52 I accuracy1/val/main: 0.757540
+06-11 11:06:52 I loss/val/main: 0.98828125
+06-11 11:08:49 I ------------------
+06-11 11:08:49 I Epoch 676/800 (E676_U422500_S865280000)
+06-11 11:08:49 I ETA: 06.11 11.14.18 estimated_duration: 00:35:24.21 time_since_last_log: 00:01:59.28 time_per_update: 00:00:00.19
+06-11 11:08:49 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:08:49 I loss/online/main/E1: 2.4932122230529785
+06-11 11:08:49 I loss/online/total/E1: 2.4932122230529785
+06-11 11:08:49 I accuracy1/online/main/E1: 0.582359
+06-11 11:08:51 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:08:51 I accuracy1/val/main: 0.757860
+06-11 11:08:51 I loss/val/main: 0.9765625
+06-11 11:10:48 I ------------------
+06-11 11:10:48 I Epoch 677/800 (E677_U423125_S866560000)
+06-11 11:10:48 I ETA: 06.11 11.16.37 estimated_duration: 00:37:42.70 time_since_last_log: 00:01:59.83 time_per_update: 00:00:00.19
+06-11 11:10:48 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:10:48 I loss/online/main/E1: 2.493577003479004
+06-11 11:10:48 I loss/online/total/E1: 2.493577003479004
+06-11 11:10:48 I accuracy1/online/main/E1: 0.582748
+06-11 11:10:51 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:10:51 I accuracy1/val/main: 0.756280
+06-11 11:10:51 I loss/val/main: 0.984375
+06-11 11:12:48 I ------------------
+06-11 11:12:48 I Epoch 678/800 (E678_U423750_S867840000)
+06-11 11:12:48 I ETA: 06.11 11.18.55 estimated_duration: 00:40:00.81 time_since_last_log: 00:01:59.84 time_per_update: 00:00:00.19
+06-11 11:12:48 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:12:48 I loss/online/main/E1: 2.4921131134033203
+06-11 11:12:48 I loss/online/total/E1: 2.4921131134033203
+06-11 11:12:48 I accuracy1/online/main/E1: 0.582677
+06-11 11:12:51 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:12:51 I accuracy1/val/main: 0.756780
+06-11 11:12:51 I loss/val/main: 0.984375
+06-11 11:14:47 I ------------------
+06-11 11:14:47 I Epoch 679/800 (E679_U424375_S869120000)
+06-11 11:14:47 I ETA: 06.11 11.21.11 estimated_duration: 00:42:16.92 time_since_last_log: 00:01:58.50 time_per_update: 00:00:00.18
+06-11 11:14:47 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:14:47 I loss/online/main/E1: 2.492384433746338
+06-11 11:14:47 I loss/online/total/E1: 2.492384433746338
+06-11 11:14:47 I accuracy1/online/main/E1: 0.584480
+06-11 11:14:49 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:14:49 I accuracy1/val/main: 0.756880
+06-11 11:14:49 I loss/val/main: 0.984375
+06-11 11:16:47 I ------------------
+06-11 11:16:47 I Epoch 680/800 (E680_U425000_S870400000)
+06-11 11:16:47 I ETA: 06.11 11.23.29 estimated_duration: 00:44:34.86 time_since_last_log: 00:02:00.40 time_per_update: 00:00:00.19
+06-11 11:16:47 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:16:47 I loss/online/main/E1: 2.485602378845215
+06-11 11:16:47 I loss/online/total/E1: 2.485602378845215
+06-11 11:16:47 I accuracy1/online/main/E1: 0.583808
+06-11 11:16:47 I saved vislstm to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest model.th
+06-11 11:16:47 I saved vislstm optim to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest optim.th
+06-11 11:16:47 I saved trainer state_dict to .../in1k/qwdfcq26/checkpoints/trainer cp=latest.th
+06-11 11:16:50 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:16:50 I accuracy1/val/main: 0.755880
+06-11 11:16:50 I loss/val/main: 0.984375
+06-11 11:18:47 I ------------------
+06-11 11:18:47 I Epoch 681/800 (E681_U425625_S871680000)
+06-11 11:18:47 I ETA: 06.11 11.25.46 estimated_duration: 00:46:51.55 time_since_last_log: 00:01:59.67 time_per_update: 00:00:00.19
+06-11 11:18:47 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:18:47 I loss/online/main/E1: 2.495739459991455
+06-11 11:18:47 I loss/online/total/E1: 2.495739459991455
+06-11 11:18:47 I accuracy1/online/main/E1: 0.582573
+06-11 11:18:49 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:18:49 I accuracy1/val/main: 0.758760
+06-11 11:18:49 I loss/val/main: 0.97265625
+06-11 11:20:47 I ------------------
+06-11 11:20:47 I Epoch 682/800 (E682_U426250_S872960000)
+06-11 11:20:47 I ETA: 06.11 11.28.02 estimated_duration: 00:49:07.85 time_since_last_log: 00:01:59.69 time_per_update: 00:00:00.19
+06-11 11:20:47 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:20:47 I loss/online/main/E1: 2.4863390922546387
+06-11 11:20:47 I loss/online/total/E1: 2.4863390922546387
+06-11 11:20:47 I accuracy1/online/main/E1: 0.583759
+06-11 11:20:49 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:20:49 I accuracy1/val/main: 0.758760
+06-11 11:20:49 I loss/val/main: 0.9765625
+06-11 11:22:46 I ------------------
+06-11 11:22:46 I Epoch 683/800 (E683_U426875_S874240000)
+06-11 11:22:46 I ETA: 06.11 11.30.18 estimated_duration: 00:51:23.58 time_since_last_log: 00:01:59.54 time_per_update: 00:00:00.19
+06-11 11:22:46 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:22:46 I loss/online/main/E1: 2.493438720703125
+06-11 11:22:46 I loss/online/total/E1: 2.493438720703125
+06-11 11:22:46 I accuracy1/online/main/E1: 0.582716
+06-11 11:22:48 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:22:48 I accuracy1/val/main: 0.757680
+06-11 11:22:48 I loss/val/main: 0.9765625
+06-11 11:24:46 I ------------------
+06-11 11:24:46 I Epoch 684/800 (E684_U427500_S875520000)
+06-11 11:24:46 I ETA: 06.11 11.32.33 estimated_duration: 00:53:38.76 time_since_last_log: 00:01:59.41 time_per_update: 00:00:00.19
+06-11 11:24:46 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:24:46 I loss/online/main/E1: 2.483738660812378
+06-11 11:24:46 I loss/online/total/E1: 2.483738660812378
+06-11 11:24:46 I accuracy1/online/main/E1: 0.584484
+06-11 11:24:48 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:24:48 I accuracy1/val/main: 0.756740
+06-11 11:24:48 I loss/val/main: 0.98828125
+06-11 11:26:45 I ------------------
+06-11 11:26:45 I Epoch 685/800 (E685_U428125_S876800000)
+06-11 11:26:45 I ETA: 06.11 11.34.48 estimated_duration: 00:55:53.62 time_since_last_log: 00:01:59.47 time_per_update: 00:00:00.19
+06-11 11:26:45 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:26:45 I loss/online/main/E1: 2.4870998859405518
+06-11 11:26:45 I loss/online/total/E1: 2.4870998859405518
+06-11 11:26:45 I accuracy1/online/main/E1: 0.584964
+06-11 11:26:47 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:26:47 I accuracy1/val/main: 0.757980
+06-11 11:26:47 I loss/val/main: 0.984375
+06-11 11:28:44 I ------------------
+06-11 11:28:44 I Epoch 686/800 (E686_U428750_S878080000)
+06-11 11:28:44 I ETA: 06.11 11.37.02 estimated_duration: 00:58:07.97 time_since_last_log: 00:01:59.38 time_per_update: 00:00:00.19
+06-11 11:28:44 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:28:44 I loss/online/main/E1: 2.483893394470215
+06-11 11:28:44 I loss/online/total/E1: 2.483893394470215
+06-11 11:28:44 I accuracy1/online/main/E1: 0.584290
+06-11 11:28:47 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:28:47 I accuracy1/val/main: 0.757980
+06-11 11:28:47 I loss/val/main: 0.9765625
+06-11 11:30:43 I ------------------
+06-11 11:30:43 I Epoch 687/800 (E687_U429375_S879360000)
+06-11 11:30:43 I ETA: 06.11 11.39.15 estimated_duration: 01:00:21.29 time_since_last_log: 00:01:58.82 time_per_update: 00:00:00.19
+06-11 11:30:43 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:30:43 I loss/online/main/E1: 2.483182191848755
+06-11 11:30:43 I loss/online/total/E1: 2.483182191848755
+06-11 11:30:43 I accuracy1/online/main/E1: 0.583404
+06-11 11:30:45 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:30:46 I accuracy1/val/main: 0.759460
+06-11 11:30:46 I loss/val/main: 0.97265625
+06-11 11:32:42 I ------------------
+06-11 11:32:42 I Epoch 688/800 (E688_U430000_S880640000)
+06-11 11:32:42 I ETA: 06.11 11.41.29 estimated_duration: 01:02:34.44 time_since_last_log: 00:01:59.02 time_per_update: 00:00:00.19
+06-11 11:32:42 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:32:42 I loss/online/main/E1: 2.479799270629883
+06-11 11:32:42 I loss/online/total/E1: 2.479799270629883
+06-11 11:32:42 I accuracy1/online/main/E1: 0.584472
+06-11 11:32:44 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:32:45 I accuracy1/val/main: 0.759080
+06-11 11:32:45 I loss/val/main: 0.9765625
+06-11 11:34:42 I ------------------
+06-11 11:34:42 I Epoch 689/800 (E689_U430625_S881920000)
+06-11 11:34:42 I ETA: 06.11 11.43.42 estimated_duration: 01:04:48.41 time_since_last_log: 00:02:00.05 time_per_update: 00:00:00.19
+06-11 11:34:42 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:34:42 I loss/online/main/E1: 2.4778785705566406
+06-11 11:34:42 I loss/online/total/E1: 2.4778785705566406
+06-11 11:34:42 I accuracy1/online/main/E1: 0.584364
+06-11 11:34:45 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:34:45 I accuracy1/val/main: 0.759580
+06-11 11:34:45 I loss/val/main: 0.9765625
+06-11 11:36:41 I ------------------
+06-11 11:36:41 I Epoch 690/800 (E690_U431250_S883200000)
+06-11 11:36:41 I ETA: 06.11 11.45.55 estimated_duration: 01:07:00.81 time_since_last_log: 00:01:59.03 time_per_update: 00:00:00.19
+06-11 11:36:41 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:36:41 I loss/online/main/E1: 2.4689784049987793
+06-11 11:36:41 I loss/online/total/E1: 2.4689784049987793
+06-11 11:36:41 I accuracy1/online/main/E1: 0.588875
+06-11 11:36:41 I saved vislstm to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest model.th
+06-11 11:36:42 I saved vislstm optim to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest optim.th
+06-11 11:36:42 I saved trainer state_dict to .../in1k/qwdfcq26/checkpoints/trainer cp=latest.th
+06-11 11:36:44 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:36:44 I accuracy1/val/main: 0.759960
+06-11 11:36:44 I loss/val/main: 0.97265625
+06-11 11:38:42 I ------------------
+06-11 11:38:42 I Epoch 691/800 (E691_U431875_S884480000)
+06-11 11:38:42 I ETA: 06.11 11.48.09 estimated_duration: 01:09:15.22 time_since_last_log: 00:02:01.11 time_per_update: 00:00:00.19
+06-11 11:38:42 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.19, 0.19, 0.19, 0.19, 0.19, 0.19, 0.19, 0.19, 0.18, 0.18, 0.18, 0.19,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:38:42 I loss/online/main/E1: 2.4850213527679443
+06-11 11:38:42 I loss/online/total/E1: 2.4850213527679443
+06-11 11:38:42 I accuracy1/online/main/E1: 0.583198
+06-11 11:38:45 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.11
+06-11 11:38:45 I accuracy1/val/main: 0.759740
+06-11 11:38:45 I loss/val/main: 0.97265625
+06-11 11:40:44 I ------------------
+06-11 11:40:44 I Epoch 692/800 (E692_U432500_S885760000)
+06-11 11:40:44 I ETA: 06.11 11.50.24 estimated_duration: 01:11:29.53 time_since_last_log: 00:02:01.35 time_per_update: 00:00:00.19
+06-11 11:40:44 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.19, 0.19, 0.18, 0.19, 0.18, 0.18, 0.18, 0.19,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:40:44 I loss/online/main/E1: 2.478994369506836
+06-11 11:40:44 I loss/online/total/E1: 2.478994369506836
+06-11 11:40:44 I accuracy1/online/main/E1: 0.583657
+06-11 11:40:46 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:40:46 I accuracy1/val/main: 0.758980
+06-11 11:40:46 I loss/val/main: 0.97265625
+06-11 11:42:43 I ------------------
+06-11 11:42:43 I Epoch 693/800 (E693_U433125_S887040000)
+06-11 11:42:43 I ETA: 06.11 11.52.35 estimated_duration: 01:13:40.56 time_since_last_log: 00:01:58.85 time_per_update: 00:00:00.19
+06-11 11:42:43 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:42:43 I loss/online/main/E1: 2.46167254447937
+06-11 11:42:43 I loss/online/total/E1: 2.46167254447937
+06-11 11:42:43 I accuracy1/online/main/E1: 0.589502
+06-11 11:42:45 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:42:45 I accuracy1/val/main: 0.759700
+06-11 11:42:45 I loss/val/main: 0.97265625
+06-11 11:44:41 I ------------------
+06-11 11:44:41 I Epoch 694/800 (E694_U433750_S888320000)
+06-11 11:44:41 I ETA: 06.11 11.54.45 estimated_duration: 01:15:50.63 time_since_last_log: 00:01:58.35 time_per_update: 00:00:00.18
+06-11 11:44:41 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:44:41 I loss/online/main/E1: 2.4617133140563965
+06-11 11:44:41 I loss/online/total/E1: 2.4617133140563965
+06-11 11:44:41 I accuracy1/online/main/E1: 0.587783
+06-11 11:44:43 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:44:43 I accuracy1/val/main: 0.759660
+06-11 11:44:43 I loss/val/main: 0.9765625
+06-11 11:46:40 I ------------------
+06-11 11:46:40 I Epoch 695/800 (E695_U434375_S889600000)
+06-11 11:46:40 I ETA: 06.11 11.56.56 estimated_duration: 01:18:01.59 time_since_last_log: 00:01:59.44 time_per_update: 00:00:00.19
+06-11 11:46:40 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:46:40 I loss/online/main/E1: 2.4682693481445312
+06-11 11:46:40 I loss/online/total/E1: 2.4682693481445312
+06-11 11:46:40 I accuracy1/online/main/E1: 0.587794
+06-11 11:46:43 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:46:43 I accuracy1/val/main: 0.758340
+06-11 11:46:43 I loss/val/main: 0.9765625
+06-11 11:48:40 I ------------------
+06-11 11:48:40 I Epoch 696/800 (E696_U435000_S890880000)
+06-11 11:48:40 I ETA: 06.11 11.59.07 estimated_duration: 01:20:12.46 time_since_last_log: 00:01:59.69 time_per_update: 00:00:00.19
+06-11 11:48:40 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:48:40 I loss/online/main/E1: 2.453519821166992
+06-11 11:48:40 I loss/online/total/E1: 2.453519821166992
+06-11 11:48:40 I accuracy1/online/main/E1: 0.589467
+06-11 11:48:42 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:48:42 I accuracy1/val/main: 0.761280
+06-11 11:48:42 I loss/val/main: 0.96484375
+06-11 11:50:39 I ------------------
+06-11 11:50:39 I Epoch 697/800 (E697_U435625_S892160000)
+06-11 11:50:39 I ETA: 06.11 12.01.16 estimated_duration: 01:22:22.12 time_since_last_log: 00:01:58.97 time_per_update: 00:00:00.19
+06-11 11:50:39 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:50:39 I loss/online/main/E1: 2.457324504852295
+06-11 11:50:39 I loss/online/total/E1: 2.457324504852295
+06-11 11:50:39 I accuracy1/online/main/E1: 0.588589
+06-11 11:50:41 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:50:41 I accuracy1/val/main: 0.759780
+06-11 11:50:41 I loss/val/main: 0.96875
+06-11 11:52:37 I ------------------
+06-11 11:52:37 I Epoch 698/800 (E698_U436250_S893440000)
+06-11 11:52:37 I ETA: 06.11 12.03.24 estimated_duration: 01:24:30.26 time_since_last_log: 00:01:57.96 time_per_update: 00:00:00.18
+06-11 11:52:37 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:52:37 I loss/online/main/E1: 2.459296464920044
+06-11 11:52:37 I loss/online/total/E1: 2.459296464920044
+06-11 11:52:37 I accuracy1/online/main/E1: 0.589298
+06-11 11:52:39 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:52:39 I accuracy1/val/main: 0.762020
+06-11 11:52:39 I loss/val/main: 0.96875
+06-11 11:54:36 I ------------------
+06-11 11:54:36 I Epoch 699/800 (E699_U436875_S894720000)
+06-11 11:54:36 I ETA: 06.11 12.05.34 estimated_duration: 01:26:39.57 time_since_last_log: 00:01:59.30 time_per_update: 00:00:00.19
+06-11 11:54:36 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:54:36 I loss/online/main/E1: 2.4514031410217285
+06-11 11:54:36 I loss/online/total/E1: 2.4514031410217285
+06-11 11:54:36 I accuracy1/online/main/E1: 0.590491
+06-11 11:54:39 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:54:39 I accuracy1/val/main: 0.760620
+06-11 11:54:39 I loss/val/main: 0.96875
+06-11 11:56:35 I ------------------
+06-11 11:56:35 I Epoch 700/800 (E700_U437500_S896000000)
+06-11 11:56:35 I ETA: 06.11 12.07.42 estimated_duration: 01:28:48.02 time_since_last_log: 00:01:58.88 time_per_update: 00:00:00.19
+06-11 11:56:35 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:56:35 I loss/online/main/E1: 2.4604740142822266
+06-11 11:56:35 I loss/online/total/E1: 2.4604740142822266
+06-11 11:56:35 I accuracy1/online/main/E1: 0.589102
+06-11 11:56:35 I saved vislstm to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest model.th
+06-11 11:56:35 I saved vislstm optim to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest optim.th
+06-11 11:56:35 I saved trainer state_dict to .../in1k/qwdfcq26/checkpoints/trainer cp=latest.th
+06-11 11:56:38 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:56:38 I accuracy1/val/main: 0.760320
+06-11 11:56:38 I loss/val/main: 0.96875
+06-11 11:58:34 I ------------------
+06-11 11:58:34 I Epoch 701/800 (E701_U438125_S897280000)
+06-11 11:58:34 I ETA: 06.11 12.09.50 estimated_duration: 01:30:56.41 time_since_last_log: 00:01:59.14 time_per_update: 00:00:00.19
+06-11 11:58:34 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 11:58:34 I loss/online/main/E1: 2.4414865970611572
+06-11 11:58:34 I loss/online/total/E1: 2.4414865970611572
+06-11 11:58:34 I accuracy1/online/main/E1: 0.591130
+06-11 11:58:37 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 11:58:37 I accuracy1/val/main: 0.761380
+06-11 11:58:37 I loss/val/main: 0.96484375
+06-11 12:00:35 I ------------------
+06-11 12:00:35 I Epoch 702/800 (E702_U438750_S898560000)
+06-11 12:00:35 I ETA: 06.11 12.12.00 estimated_duration: 01:33:05.99 time_since_last_log: 00:02:00.52 time_per_update: 00:00:00.19
+06-11 12:00:35 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:00:35 I loss/online/main/E1: 2.457472324371338
+06-11 12:00:35 I loss/online/total/E1: 2.457472324371338
+06-11 12:00:35 I accuracy1/online/main/E1: 0.588480
+06-11 12:00:37 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:00:37 I accuracy1/val/main: 0.761280
+06-11 12:00:37 I loss/val/main: 0.97265625
+06-11 12:02:32 I ------------------
+06-11 12:02:32 I Epoch 703/800 (E703_U439375_S899840000)
+06-11 12:02:32 I ETA: 06.11 12.14.05 estimated_duration: 01:35:11.12 time_since_last_log: 00:01:56.92 time_per_update: 00:00:00.18
+06-11 12:02:32 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:02:32 I loss/online/main/E1: 2.4465348720550537
+06-11 12:02:32 I loss/online/total/E1: 2.4465348720550537
+06-11 12:02:32 I accuracy1/online/main/E1: 0.591807
+06-11 12:02:34 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:02:34 I accuracy1/val/main: 0.761780
+06-11 12:02:34 I loss/val/main: 0.96875
+06-11 12:04:32 I ------------------
+06-11 12:04:32 I Epoch 704/800 (E704_U440000_S901120000)
+06-11 12:04:32 I ETA: 06.11 12.16.14 estimated_duration: 01:37:19.69 time_since_last_log: 00:02:00.26 time_per_update: 00:00:00.19
+06-11 12:04:32 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:04:32 I loss/online/main/E1: 2.444194793701172
+06-11 12:04:32 I loss/online/total/E1: 2.444194793701172
+06-11 12:04:32 I accuracy1/online/main/E1: 0.591376
+06-11 12:04:34 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:04:34 I accuracy1/val/main: 0.762000
+06-11 12:04:34 I loss/val/main: 0.97265625
+06-11 12:06:31 I ------------------
+06-11 12:06:31 I Epoch 705/800 (E705_U440625_S902400000)
+06-11 12:06:31 I ETA: 06.11 12.18.21 estimated_duration: 01:39:26.60 time_since_last_log: 00:01:59.12 time_per_update: 00:00:00.19
+06-11 12:06:31 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:06:31 I loss/online/main/E1: 2.441984176635742
+06-11 12:06:31 I loss/online/total/E1: 2.441984176635742
+06-11 12:06:31 I accuracy1/online/main/E1: 0.592681
+06-11 12:06:33 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:06:34 I accuracy1/val/main: 0.762460
+06-11 12:06:34 I loss/val/main: 0.96484375
+06-11 12:08:29 I ------------------
+06-11 12:08:29 I Epoch 706/800 (E706_U441250_S903680000)
+06-11 12:08:29 I ETA: 06.11 12.20.26 estimated_duration: 01:41:32.01 time_since_last_log: 00:01:58.12 time_per_update: 00:00:00.18
+06-11 12:08:29 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:08:29 I loss/online/main/E1: 2.443620204925537
+06-11 12:08:29 I loss/online/total/E1: 2.443620204925537
+06-11 12:08:29 I accuracy1/online/main/E1: 0.590514
+06-11 12:08:32 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:08:32 I accuracy1/val/main: 0.764400
+06-11 12:08:32 I loss/val/main: 0.953125
+06-11 12:10:29 I ------------------
+06-11 12:10:29 I Epoch 707/800 (E707_U441875_S904960000)
+06-11 12:10:29 I ETA: 06.11 12.22.33 estimated_duration: 01:43:38.73 time_since_last_log: 00:01:59.59 time_per_update: 00:00:00.19
+06-11 12:10:29 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:10:29 I loss/online/main/E1: 2.442279577255249
+06-11 12:10:29 I loss/online/total/E1: 2.442279577255249
+06-11 12:10:29 I accuracy1/online/main/E1: 0.592171
+06-11 12:10:31 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:10:31 I accuracy1/val/main: 0.762880
+06-11 12:10:31 I loss/val/main: 0.96875
+06-11 12:12:28 I ------------------
+06-11 12:12:28 I Epoch 708/800 (E708_U442500_S906240000)
+06-11 12:12:28 I ETA: 06.11 12.24.39 estimated_duration: 01:45:44.65 time_since_last_log: 00:01:59.20 time_per_update: 00:00:00.19
+06-11 12:12:28 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:12:28 I loss/online/main/E1: 2.4353346824645996
+06-11 12:12:28 I loss/online/total/E1: 2.4353346824645996
+06-11 12:12:28 I accuracy1/online/main/E1: 0.593312
+06-11 12:12:30 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:12:30 I accuracy1/val/main: 0.762940
+06-11 12:12:30 I loss/val/main: 0.95703125
+06-11 12:14:26 I ------------------
+06-11 12:14:26 I Epoch 709/800 (E709_U443125_S907520000)
+06-11 12:14:26 I ETA: 06.11 12.26.42 estimated_duration: 01:47:48.29 time_since_last_log: 00:01:57.50 time_per_update: 00:00:00.18
+06-11 12:14:26 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:14:26 I loss/online/main/E1: 2.4385948181152344
+06-11 12:14:26 I loss/online/total/E1: 2.4385948181152344
+06-11 12:14:26 I accuracy1/online/main/E1: 0.590776
+06-11 12:14:28 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:14:28 I accuracy1/val/main: 0.762480
+06-11 12:14:28 I loss/val/main: 0.95703125
+06-11 12:16:24 I ------------------
+06-11 12:16:24 I Epoch 710/800 (E710_U443750_S908800000)
+06-11 12:16:24 I ETA: 06.11 12.28.47 estimated_duration: 01:49:52.73 time_since_last_log: 00:01:58.51 time_per_update: 00:00:00.18
+06-11 12:16:24 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:16:24 I loss/online/main/E1: 2.443179130554199
+06-11 12:16:24 I loss/online/total/E1: 2.443179130554199
+06-11 12:16:24 I accuracy1/online/main/E1: 0.590503
+06-11 12:16:24 I saved vislstm to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest model.th
+06-11 12:16:24 I saved vislstm optim to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest optim.th
+06-11 12:16:24 I saved trainer state_dict to .../in1k/qwdfcq26/checkpoints/trainer cp=latest.th
+06-11 12:16:27 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:16:27 I accuracy1/val/main: 0.763040
+06-11 12:16:27 I loss/val/main: 0.95703125
+06-11 12:18:25 I ------------------
+06-11 12:18:25 I Epoch 711/800 (E711_U444375_S910080000)
+06-11 12:18:25 I ETA: 06.11 12.30.53 estimated_duration: 01:51:59.15 time_since_last_log: 00:02:00.58 time_per_update: 00:00:00.19
+06-11 12:18:25 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:18:25 I loss/online/main/E1: 2.440662145614624
+06-11 12:18:25 I loss/online/total/E1: 2.440662145614624
+06-11 12:18:25 I accuracy1/online/main/E1: 0.591273
+06-11 12:18:27 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:18:27 I accuracy1/val/main: 0.762740
+06-11 12:18:27 I loss/val/main: 0.96484375
+06-11 12:20:22 I ------------------
+06-11 12:20:22 I Epoch 712/800 (E712_U445000_S911360000)
+06-11 12:20:22 I ETA: 06.11 12.32.55 estimated_duration: 01:54:01.24 time_since_last_log: 00:01:57.05 time_per_update: 00:00:00.18
+06-11 12:20:22 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:20:22 I loss/online/main/E1: 2.425546884536743
+06-11 12:20:22 I loss/online/total/E1: 2.425546884536743
+06-11 12:20:22 I accuracy1/online/main/E1: 0.593141
+06-11 12:20:24 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:20:24 I accuracy1/val/main: 0.762980
+06-11 12:20:24 I loss/val/main: 0.9609375
+06-11 12:22:22 I ------------------
+06-11 12:22:22 I Epoch 713/800 (E713_U445625_S912640000)
+06-11 12:22:22 I ETA: 06.11 12.35.00 estimated_duration: 01:56:06.17 time_since_last_log: 00:01:59.89 time_per_update: 00:00:00.19
+06-11 12:22:22 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:22:22 I loss/online/main/E1: 2.433558940887451
+06-11 12:22:22 I loss/online/total/E1: 2.433558940887451
+06-11 12:22:22 I accuracy1/online/main/E1: 0.592631
+06-11 12:22:24 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:22:24 I accuracy1/val/main: 0.764360
+06-11 12:22:24 I loss/val/main: 0.9609375
+06-11 12:24:20 I ------------------
+06-11 12:24:20 I Epoch 714/800 (E714_U446250_S913920000)
+06-11 12:24:20 I ETA: 06.11 12.37.03 estimated_duration: 01:58:08.87 time_since_last_log: 00:01:58.21 time_per_update: 00:00:00.18
+06-11 12:24:20 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:24:20 I loss/online/main/E1: 2.4269280433654785
+06-11 12:24:20 I loss/online/total/E1: 2.4269280433654785
+06-11 12:24:20 I accuracy1/online/main/E1: 0.593204
+06-11 12:24:22 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:24:22 I accuracy1/val/main: 0.762700
+06-11 12:24:22 I loss/val/main: 0.9609375
+06-11 12:26:18 I ------------------
+06-11 12:26:18 I Epoch 715/800 (E715_U446875_S915200000)
+06-11 12:26:18 I ETA: 06.11 12.39.05 estimated_duration: 02:00:10.72 time_since_last_log: 00:01:57.75 time_per_update: 00:00:00.18
+06-11 12:26:18 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:26:18 I loss/online/main/E1: 2.428985118865967
+06-11 12:26:18 I loss/online/total/E1: 2.428985118865967
+06-11 12:26:18 I accuracy1/online/main/E1: 0.593418
+06-11 12:26:20 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:26:20 I accuracy1/val/main: 0.763840
+06-11 12:26:20 I loss/val/main: 0.9609375
+06-11 12:28:17 I ------------------
+06-11 12:28:17 I Epoch 716/800 (E716_U447500_S916480000)
+06-11 12:28:17 I ETA: 06.11 12.41.08 estimated_duration: 02:02:13.55 time_since_last_log: 00:01:58.94 time_per_update: 00:00:00.19
+06-11 12:28:17 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:28:17 I loss/online/main/E1: 2.430637836456299
+06-11 12:28:17 I loss/online/total/E1: 2.430637836456299
+06-11 12:28:17 I accuracy1/online/main/E1: 0.592337
+06-11 12:28:19 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:28:19 I accuracy1/val/main: 0.763480
+06-11 12:28:19 I loss/val/main: 0.953125
+06-11 12:30:16 I ------------------
+06-11 12:30:16 I Epoch 717/800 (E717_U448125_S917760000)
+06-11 12:30:16 I ETA: 06.11 12.43.11 estimated_duration: 02:04:16.55 time_since_last_log: 00:01:59.40 time_per_update: 00:00:00.19
+06-11 12:30:16 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:30:16 I loss/online/main/E1: 2.4255545139312744
+06-11 12:30:16 I loss/online/total/E1: 2.4255545139312744
+06-11 12:30:16 I accuracy1/online/main/E1: 0.595155
+06-11 12:30:18 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:30:18 I accuracy1/val/main: 0.762160
+06-11 12:30:18 I loss/val/main: 0.97265625
+06-11 12:32:15 I ------------------
+06-11 12:32:15 I Epoch 718/800 (E718_U448750_S919040000)
+06-11 12:32:15 I ETA: 06.11 12.45.12 estimated_duration: 02:06:18.25 time_since_last_log: 00:01:58.53 time_per_update: 00:00:00.18
+06-11 12:32:15 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:32:15 I loss/online/main/E1: 2.420764684677124
+06-11 12:32:15 I loss/online/total/E1: 2.420764684677124
+06-11 12:32:15 I accuracy1/online/main/E1: 0.593784
+06-11 12:32:17 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:32:17 I accuracy1/val/main: 0.764700
+06-11 12:32:17 I loss/val/main: 0.953125
+06-11 12:34:13 I ------------------
+06-11 12:34:13 I Epoch 719/800 (E719_U449375_S920320000)
+06-11 12:34:13 I ETA: 06.11 12.47.14 estimated_duration: 02:08:19.49 time_since_last_log: 00:01:58.43 time_per_update: 00:00:00.18
+06-11 12:34:13 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:34:13 I loss/online/main/E1: 2.426849603652954
+06-11 12:34:13 I loss/online/total/E1: 2.426849603652954
+06-11 12:34:13 I accuracy1/online/main/E1: 0.593778
+06-11 12:34:15 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:34:15 I accuracy1/val/main: 0.762960
+06-11 12:34:15 I loss/val/main: 0.96484375
+06-11 12:36:12 I ------------------
+06-11 12:36:12 I Epoch 720/800 (E720_U450000_S921600000)
+06-11 12:36:12 I ETA: 06.11 12.49.15 estimated_duration: 02:10:21.13 time_since_last_log: 00:01:59.09 time_per_update: 00:00:00.19
+06-11 12:36:12 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:36:12 I loss/online/main/E1: 2.432249069213867
+06-11 12:36:12 I loss/online/total/E1: 2.432249069213867
+06-11 12:36:12 I accuracy1/online/main/E1: 0.592132
+06-11 12:36:12 I saved vislstm to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest model.th
+06-11 12:36:12 I saved vislstm optim to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest optim.th
+06-11 12:36:12 I saved trainer state_dict to .../in1k/qwdfcq26/checkpoints/trainer cp=latest.th
+06-11 12:36:15 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:36:15 I accuracy1/val/main: 0.764580
+06-11 12:36:15 I loss/val/main: 0.95703125
+06-11 12:38:09 I ------------------
+06-11 12:38:09 I Epoch 721/800 (E721_U450625_S922880000)
+06-11 12:38:09 I ETA: 06.11 12.51.14 estimated_duration: 02:12:20.39 time_since_last_log: 00:01:57.25 time_per_update: 00:00:00.18
+06-11 12:38:09 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:38:09 I loss/online/main/E1: 2.418201446533203
+06-11 12:38:09 I loss/online/total/E1: 2.418201446533203
+06-11 12:38:09 I accuracy1/online/main/E1: 0.595487
+06-11 12:38:12 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:38:12 I accuracy1/val/main: 0.764000
+06-11 12:38:12 I loss/val/main: 0.94921875
+06-11 12:40:09 I ------------------
+06-11 12:40:09 I Epoch 722/800 (E722_U451250_S924160000)
+06-11 12:40:09 I ETA: 06.11 12.53.16 estimated_duration: 02:14:21.67 time_since_last_log: 00:01:59.37 time_per_update: 00:00:00.19
+06-11 12:40:09 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:40:09 I loss/online/main/E1: 2.419346809387207
+06-11 12:40:09 I loss/online/total/E1: 2.419346809387207
+06-11 12:40:09 I accuracy1/online/main/E1: 0.594275
+06-11 12:40:11 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:40:11 I accuracy1/val/main: 0.764720
+06-11 12:40:11 I loss/val/main: 0.95703125
+06-11 12:42:07 I ------------------
+06-11 12:42:07 I Epoch 723/800 (E723_U451875_S925440000)
+06-11 12:42:07 I ETA: 06.11 12.55.15 estimated_duration: 02:16:21.01 time_since_last_log: 00:01:57.92 time_per_update: 00:00:00.18
+06-11 12:42:07 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:42:07 I loss/online/main/E1: 2.430699586868286
+06-11 12:42:07 I loss/online/total/E1: 2.430699586868286
+06-11 12:42:07 I accuracy1/online/main/E1: 0.592356
+06-11 12:42:09 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:42:09 I accuracy1/val/main: 0.764080
+06-11 12:42:09 I loss/val/main: 0.95703125
+06-11 12:44:05 I ------------------
+06-11 12:44:05 I Epoch 724/800 (E724_U452500_S926720000)
+06-11 12:44:05 I ETA: 06.11 12.57.14 estimated_duration: 02:18:20.04 time_since_last_log: 00:01:57.94 time_per_update: 00:00:00.18
+06-11 12:44:05 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:44:05 I loss/online/main/E1: 2.4179131984710693
+06-11 12:44:05 I loss/online/total/E1: 2.4179131984710693
+06-11 12:44:05 I accuracy1/online/main/E1: 0.594490
+06-11 12:44:07 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:44:07 I accuracy1/val/main: 0.764640
+06-11 12:44:07 I loss/val/main: 0.9609375
+06-11 12:46:02 I ------------------
+06-11 12:46:02 I Epoch 725/800 (E725_U453125_S928000000)
+06-11 12:46:02 I ETA: 06.11 12.59.13 estimated_duration: 02:20:18.58 time_since_last_log: 00:01:57.79 time_per_update: 00:00:00.18
+06-11 12:46:02 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:46:02 I loss/online/main/E1: 2.420485019683838
+06-11 12:46:02 I loss/online/total/E1: 2.420485019683838
+06-11 12:46:02 I accuracy1/online/main/E1: 0.594183
+06-11 12:46:05 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:46:05 I accuracy1/val/main: 0.765680
+06-11 12:46:05 I loss/val/main: 0.94921875
+06-11 12:48:02 I ------------------
+06-11 12:48:02 I Epoch 726/800 (E726_U453750_S929280000)
+06-11 12:48:02 I ETA: 06.11 13.01.13 estimated_duration: 02:22:18.93 time_since_last_log: 00:01:59.73 time_per_update: 00:00:00.19
+06-11 12:48:02 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:48:02 I loss/online/main/E1: 2.4146385192871094
+06-11 12:48:02 I loss/online/total/E1: 2.4146385192871094
+06-11 12:48:02 I accuracy1/online/main/E1: 0.595834
+06-11 12:48:04 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:48:04 I accuracy1/val/main: 0.764320
+06-11 12:48:04 I loss/val/main: 0.95703125
+06-11 12:50:00 I ------------------
+06-11 12:50:00 I Epoch 727/800 (E727_U454375_S930560000)
+06-11 12:50:00 I ETA: 06.11 13.03.11 estimated_duration: 02:24:16.81 time_since_last_log: 00:01:57.80 time_per_update: 00:00:00.18
+06-11 12:50:00 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:50:00 I loss/online/main/E1: 2.415745973587036
+06-11 12:50:00 I loss/online/total/E1: 2.415745973587036
+06-11 12:50:00 I accuracy1/online/main/E1: 0.595771
+06-11 12:50:02 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:50:02 I accuracy1/val/main: 0.764040
+06-11 12:50:02 I loss/val/main: 0.9609375
+06-11 12:51:57 I ------------------
+06-11 12:51:57 I Epoch 728/800 (E728_U455000_S931840000)
+06-11 12:51:57 I ETA: 06.11 13.05.07 estimated_duration: 02:26:13.01 time_since_last_log: 00:01:56.56 time_per_update: 00:00:00.18
+06-11 12:51:57 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:51:57 I loss/online/main/E1: 2.4192886352539062
+06-11 12:51:57 I loss/online/total/E1: 2.4192886352539062
+06-11 12:51:57 I accuracy1/online/main/E1: 0.593382
+06-11 12:51:59 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:51:59 I accuracy1/val/main: 0.765400
+06-11 12:51:59 I loss/val/main: 0.9453125
+06-11 12:53:55 I ------------------
+06-11 12:53:55 I Epoch 729/800 (E729_U455625_S933120000)
+06-11 12:53:55 I ETA: 06.11 13.07.05 estimated_duration: 02:28:11.13 time_since_last_log: 00:01:58.59 time_per_update: 00:00:00.18
+06-11 12:53:55 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:53:55 I loss/online/main/E1: 2.4127933979034424
+06-11 12:53:55 I loss/online/total/E1: 2.4127933979034424
+06-11 12:53:55 I accuracy1/online/main/E1: 0.595539
+06-11 12:53:57 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:53:57 I accuracy1/val/main: 0.766020
+06-11 12:53:57 I loss/val/main: 0.9453125
+06-11 12:55:53 I ------------------
+06-11 12:55:53 I Epoch 730/800 (E730_U456250_S934400000)
+06-11 12:55:53 I ETA: 06.11 13.09.02 estimated_duration: 02:30:07.66 time_since_last_log: 00:01:57.45 time_per_update: 00:00:00.18
+06-11 12:55:53 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:55:53 I loss/online/main/E1: 2.4060051441192627
+06-11 12:55:53 I loss/online/total/E1: 2.4060051441192627
+06-11 12:55:53 I accuracy1/online/main/E1: 0.596438
+06-11 12:55:53 I saved vislstm to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest model.th
+06-11 12:55:53 I saved vislstm optim to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest optim.th
+06-11 12:55:53 I saved trainer state_dict to .../in1k/qwdfcq26/checkpoints/trainer cp=latest.th
+06-11 12:55:55 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:55:55 I accuracy1/val/main: 0.765880
+06-11 12:55:55 I loss/val/main: 0.94921875
+06-11 12:57:51 I ------------------
+06-11 12:57:51 I Epoch 731/800 (E731_U456875_S935680000)
+06-11 12:57:51 I ETA: 06.11 13.10.59 estimated_duration: 02:32:05.36 time_since_last_log: 00:01:58.81 time_per_update: 00:00:00.19
+06-11 12:57:51 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:57:51 I loss/online/main/E1: 2.4058713912963867
+06-11 12:57:51 I loss/online/total/E1: 2.4058713912963867
+06-11 12:57:51 I accuracy1/online/main/E1: 0.596709
+06-11 12:57:54 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:57:54 I accuracy1/val/main: 0.765120
+06-11 12:57:54 I loss/val/main: 0.9453125
+06-11 12:59:48 I ------------------
+06-11 12:59:48 I Epoch 732/800 (E732_U457500_S936960000)
+06-11 12:59:48 I ETA: 06.11 13.12.55 estimated_duration: 02:34:00.45 time_since_last_log: 00:01:56.71 time_per_update: 00:00:00.18
+06-11 12:59:48 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 12:59:48 I loss/online/main/E1: 2.4048571586608887
+06-11 12:59:48 I loss/online/total/E1: 2.4048571586608887
+06-11 12:59:48 I accuracy1/online/main/E1: 0.596840
+06-11 12:59:50 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 12:59:50 I accuracy1/val/main: 0.764640
+06-11 12:59:50 I loss/val/main: 0.94921875
+06-11 13:01:47 I ------------------
+06-11 13:01:47 I Epoch 733/800 (E733_U458125_S938240000)
+06-11 13:01:47 I ETA: 06.11 13.14.52 estimated_duration: 02:35:57.72 time_since_last_log: 00:01:59.00 time_per_update: 00:00:00.19
+06-11 13:01:47 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:01:47 I loss/online/main/E1: 2.399718761444092
+06-11 13:01:47 I loss/online/total/E1: 2.399718761444092
+06-11 13:01:47 I accuracy1/online/main/E1: 0.599174
+06-11 13:01:49 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:01:49 I accuracy1/val/main: 0.766480
+06-11 13:01:49 I loss/val/main: 0.9453125
+06-11 13:03:45 I ------------------
+06-11 13:03:45 I Epoch 734/800 (E734_U458750_S939520000)
+06-11 13:03:45 I ETA: 06.11 13.16.48 estimated_duration: 02:37:53.67 time_since_last_log: 00:01:58.08 time_per_update: 00:00:00.18
+06-11 13:03:45 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:03:45 I loss/online/main/E1: 2.399284839630127
+06-11 13:03:45 I loss/online/total/E1: 2.399284839630127
+06-11 13:03:45 I accuracy1/online/main/E1: 0.598028
+06-11 13:03:47 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:03:47 I accuracy1/val/main: 0.766280
+06-11 13:03:47 I loss/val/main: 0.94921875
+06-11 13:05:42 I ------------------
+06-11 13:05:42 I Epoch 735/800 (E735_U459375_S940800000)
+06-11 13:05:42 I ETA: 06.11 13.18.42 estimated_duration: 02:39:48.41 time_since_last_log: 00:01:57.26 time_per_update: 00:00:00.18
+06-11 13:05:42 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:05:42 I loss/online/main/E1: 2.406951904296875
+06-11 13:05:42 I loss/online/total/E1: 2.406951904296875
+06-11 13:05:42 I accuracy1/online/main/E1: 0.595988
+06-11 13:05:45 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:05:45 I accuracy1/val/main: 0.766140
+06-11 13:05:45 I loss/val/main: 0.9453125
+06-11 13:07:40 I ------------------
+06-11 13:07:40 I Epoch 736/800 (E736_U460000_S942080000)
+06-11 13:07:40 I ETA: 06.11 13.20.37 estimated_duration: 02:41:42.68 time_since_last_log: 00:01:57.12 time_per_update: 00:00:00.18
+06-11 13:07:40 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:07:40 I loss/online/main/E1: 2.40841007232666
+06-11 13:07:40 I loss/online/total/E1: 2.40841007232666
+06-11 13:07:40 I accuracy1/online/main/E1: 0.595477
+06-11 13:07:42 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:07:42 I accuracy1/val/main: 0.766420
+06-11 13:07:42 I loss/val/main: 0.94921875
+06-11 13:09:37 I ------------------
+06-11 13:09:37 I Epoch 737/800 (E737_U460625_S943360000)
+06-11 13:09:37 I ETA: 06.11 13.22.32 estimated_duration: 02:43:37.52 time_since_last_log: 00:01:57.92 time_per_update: 00:00:00.18
+06-11 13:09:37 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:09:37 I loss/online/main/E1: 2.3985118865966797
+06-11 13:09:37 I loss/online/total/E1: 2.3985118865966797
+06-11 13:09:38 I accuracy1/online/main/E1: 0.597511
+06-11 13:09:40 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:09:40 I accuracy1/val/main: 0.766540
+06-11 13:09:40 I loss/val/main: 0.94921875
+06-11 13:11:36 I ------------------
+06-11 13:11:36 I Epoch 738/800 (E738_U461250_S944640000)
+06-11 13:11:36 I ETA: 06.11 13.24.27 estimated_duration: 02:45:32.92 time_since_last_log: 00:01:58.73 time_per_update: 00:00:00.18
+06-11 13:11:36 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:11:36 I loss/online/main/E1: 2.394562244415283
+06-11 13:11:36 I loss/online/total/E1: 2.394562244415283
+06-11 13:11:36 I accuracy1/online/main/E1: 0.599329
+06-11 13:11:38 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:11:39 I accuracy1/val/main: 0.765280
+06-11 13:11:39 I loss/val/main: 0.9453125
+06-11 13:13:34 I ------------------
+06-11 13:13:34 I Epoch 739/800 (E739_U461875_S945920000)
+06-11 13:13:34 I ETA: 06.11 13.26.22 estimated_duration: 02:47:27.50 time_since_last_log: 00:01:58.26 time_per_update: 00:00:00.18
+06-11 13:13:34 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:13:34 I loss/online/main/E1: 2.397773265838623
+06-11 13:13:34 I loss/online/total/E1: 2.397773265838623
+06-11 13:13:34 I accuracy1/online/main/E1: 0.597661
+06-11 13:13:37 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:13:37 I accuracy1/val/main: 0.765920
+06-11 13:13:37 I loss/val/main: 0.9453125
+06-11 13:15:32 I ------------------
+06-11 13:15:32 I Epoch 740/800 (E740_U462500_S947200000)
+06-11 13:15:32 I ETA: 06.11 13.28.15 estimated_duration: 02:49:20.84 time_since_last_log: 00:01:57.40 time_per_update: 00:00:00.18
+06-11 13:15:32 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:15:32 I loss/online/main/E1: 2.3935036659240723
+06-11 13:15:32 I loss/online/total/E1: 2.3935036659240723
+06-11 13:15:32 I accuracy1/online/main/E1: 0.597852
+06-11 13:15:32 I saved vislstm to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest model.th
+06-11 13:15:32 I saved vislstm optim to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest optim.th
+06-11 13:15:32 I saved trainer state_dict to .../in1k/qwdfcq26/checkpoints/trainer cp=latest.th
+06-11 13:15:34 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:15:34 I accuracy1/val/main: 0.765760
+06-11 13:15:34 I loss/val/main: 0.9453125
+06-11 13:17:29 I ------------------
+06-11 13:17:29 I Epoch 741/800 (E741_U463125_S948480000)
+06-11 13:17:29 I ETA: 06.11 13.30.08 estimated_duration: 02:51:13.88 time_since_last_log: 00:01:57.40 time_per_update: 00:00:00.18
+06-11 13:17:29 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:17:29 I loss/online/main/E1: 2.398615837097168
+06-11 13:17:29 I loss/online/total/E1: 2.398615837097168
+06-11 13:17:29 I accuracy1/online/main/E1: 0.597204
+06-11 13:17:32 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:17:32 I accuracy1/val/main: 0.765620
+06-11 13:17:32 I loss/val/main: 0.9453125
+06-11 13:19:27 I ------------------
+06-11 13:19:27 I Epoch 742/800 (E742_U463750_S949760000)
+06-11 13:19:27 I ETA: 06.11 13.32.01 estimated_duration: 02:53:07.15 time_since_last_log: 00:01:57.90 time_per_update: 00:00:00.18
+06-11 13:19:27 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:19:27 I loss/online/main/E1: 2.3987038135528564
+06-11 13:19:27 I loss/online/total/E1: 2.3987038135528564
+06-11 13:19:27 I accuracy1/online/main/E1: 0.597132
+06-11 13:19:29 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:19:30 I accuracy1/val/main: 0.766160
+06-11 13:19:30 I loss/val/main: 0.94921875
+06-11 13:21:24 I ------------------
+06-11 13:21:24 I Epoch 743/800 (E743_U464375_S951040000)
+06-11 13:21:24 I ETA: 06.11 13.33.53 estimated_duration: 02:54:58.69 time_since_last_log: 00:01:56.58 time_per_update: 00:00:00.18
+06-11 13:21:24 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:21:24 I loss/online/main/E1: 2.399538278579712
+06-11 13:21:24 I loss/online/total/E1: 2.399538278579712
+06-11 13:21:24 I accuracy1/online/main/E1: 0.597083
+06-11 13:21:26 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:21:26 I accuracy1/val/main: 0.765860
+06-11 13:21:26 I loss/val/main: 0.9453125
+06-11 13:23:23 I ------------------
+06-11 13:23:23 I Epoch 744/800 (E744_U465000_S952320000)
+06-11 13:23:23 I ETA: 06.11 13.35.46 estimated_duration: 02:56:52.34 time_since_last_log: 00:01:58.82 time_per_update: 00:00:00.19
+06-11 13:23:23 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:23:23 I loss/online/main/E1: 2.39919114112854
+06-11 13:23:23 I loss/online/total/E1: 2.39919114112854
+06-11 13:23:23 I accuracy1/online/main/E1: 0.598598
+06-11 13:23:25 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:23:25 I accuracy1/val/main: 0.767500
+06-11 13:23:25 I loss/val/main: 0.94140625
+06-11 13:25:20 I ------------------
+06-11 13:25:20 I Epoch 745/800 (E745_U465625_S953600000)
+06-11 13:25:20 I ETA: 06.11 13.37.39 estimated_duration: 02:58:44.51 time_since_last_log: 00:01:57.72 time_per_update: 00:00:00.18
+06-11 13:25:20 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:25:20 I loss/online/main/E1: 2.392106294631958
+06-11 13:25:20 I loss/online/total/E1: 2.392106294631958
+06-11 13:25:20 I accuracy1/online/main/E1: 0.598484
+06-11 13:25:23 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:25:23 I accuracy1/val/main: 0.767000
+06-11 13:25:23 I loss/val/main: 0.94140625
+06-11 13:27:19 I ------------------
+06-11 13:27:19 I Epoch 746/800 (E746_U466250_S954880000)
+06-11 13:27:19 I ETA: 06.11 13.39.31 estimated_duration: 03:00:36.97 time_since_last_log: 00:01:58.28 time_per_update: 00:00:00.18
+06-11 13:27:19 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:27:19 I loss/online/main/E1: 2.377927303314209
+06-11 13:27:19 I loss/online/total/E1: 2.377927303314209
+06-11 13:27:19 I accuracy1/online/main/E1: 0.600491
+06-11 13:27:21 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:27:21 I accuracy1/val/main: 0.765820
+06-11 13:27:21 I loss/val/main: 0.9453125
+06-11 13:29:15 I ------------------
+06-11 13:29:15 I Epoch 747/800 (E747_U466875_S956160000)
+06-11 13:29:15 I ETA: 06.11 13.41.21 estimated_duration: 03:02:26.69 time_since_last_log: 00:01:56.00 time_per_update: 00:00:00.18
+06-11 13:29:15 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:29:15 I loss/online/main/E1: 2.394082546234131
+06-11 13:29:15 I loss/online/total/E1: 2.394082546234131
+06-11 13:29:15 I accuracy1/online/main/E1: 0.599335
+06-11 13:29:17 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:29:17 I accuracy1/val/main: 0.767680
+06-11 13:29:17 I loss/val/main: 0.94140625
+06-11 13:31:13 I ------------------
+06-11 13:31:13 I Epoch 748/800 (E748_U467500_S957440000)
+06-11 13:31:13 I ETA: 06.11 13.43.13 estimated_duration: 03:04:18.65 time_since_last_log: 00:01:58.37 time_per_update: 00:00:00.18
+06-11 13:31:13 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:31:13 I loss/online/main/E1: 2.386542558670044
+06-11 13:31:13 I loss/online/total/E1: 2.386542558670044
+06-11 13:31:13 I accuracy1/online/main/E1: 0.599369
+06-11 13:31:15 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:31:15 I accuracy1/val/main: 0.767000
+06-11 13:31:15 I loss/val/main: 0.94140625
+06-11 13:33:10 I ------------------
+06-11 13:33:10 I Epoch 749/800 (E749_U468125_S958720000)
+06-11 13:33:10 I ETA: 06.11 13.45.03 estimated_duration: 03:06:09.06 time_since_last_log: 00:01:57.19 time_per_update: 00:00:00.18
+06-11 13:33:10 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:33:10 I loss/online/main/E1: 2.387289047241211
+06-11 13:33:10 I loss/online/total/E1: 2.387289047241211
+06-11 13:33:10 I accuracy1/online/main/E1: 0.599255
+06-11 13:33:12 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:33:13 I accuracy1/val/main: 0.767460
+06-11 13:33:13 I loss/val/main: 0.94140625
+06-11 13:35:08 I ------------------
+06-11 13:35:08 I Epoch 750/800 (E750_U468750_S960000000)
+06-11 13:35:08 I ETA: 06.11 13.46.54 estimated_duration: 03:07:59.72 time_since_last_log: 00:01:57.72 time_per_update: 00:00:00.18
+06-11 13:35:08 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:35:08 I loss/online/main/E1: 2.387807846069336
+06-11 13:35:08 I loss/online/total/E1: 2.387807846069336
+06-11 13:35:08 I accuracy1/online/main/E1: 0.598860
+06-11 13:35:08 I saved vislstm to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest model.th
+06-11 13:35:08 I saved vislstm optim to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest optim.th
+06-11 13:35:08 I saved trainer state_dict to .../in1k/qwdfcq26/checkpoints/trainer cp=latest.th
+06-11 13:35:10 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:35:10 I accuracy1/val/main: 0.767520
+06-11 13:35:10 I loss/val/main: 0.9453125
+06-11 13:37:06 I ------------------
+06-11 13:37:06 I Epoch 751/800 (E751_U469375_S961280000)
+06-11 13:37:06 I ETA: 06.11 13.48.44 estimated_duration: 03:09:50.30 time_since_last_log: 00:01:57.91 time_per_update: 00:00:00.18
+06-11 13:37:06 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:37:06 I loss/online/main/E1: 2.3825817108154297
+06-11 13:37:06 I loss/online/total/E1: 2.3825817108154297
+06-11 13:37:06 I accuracy1/online/main/E1: 0.599704
+06-11 13:37:08 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:37:08 I accuracy1/val/main: 0.768180
+06-11 13:37:08 I loss/val/main: 0.9375
+06-11 13:39:03 I ------------------
+06-11 13:39:03 I Epoch 752/800 (E752_U470000_S962560000)
+06-11 13:39:03 I ETA: 06.11 13.50.34 estimated_duration: 03:11:40.28 time_since_last_log: 00:01:57.62 time_per_update: 00:00:00.18
+06-11 13:39:03 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:39:03 I loss/online/main/E1: 2.3873887062072754
+06-11 13:39:03 I loss/online/total/E1: 2.3873887062072754
+06-11 13:39:03 I accuracy1/online/main/E1: 0.599580
+06-11 13:39:06 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:39:06 I accuracy1/val/main: 0.768520
+06-11 13:39:06 I loss/val/main: 0.9375
+06-11 13:41:02 I ------------------
+06-11 13:41:02 I Epoch 753/800 (E753_U470625_S963840000)
+06-11 13:41:02 I ETA: 06.11 13.52.25 estimated_duration: 03:13:30.44 time_since_last_log: 00:01:58.07 time_per_update: 00:00:00.18
+06-11 13:41:02 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:41:02 I loss/online/main/E1: 2.380086898803711
+06-11 13:41:02 I loss/online/total/E1: 2.380086898803711
+06-11 13:41:02 I accuracy1/online/main/E1: 0.600116
+06-11 13:41:04 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:41:04 I accuracy1/val/main: 0.768460
+06-11 13:41:04 I loss/val/main: 0.9375
+06-11 13:43:01 I ------------------
+06-11 13:43:01 I Epoch 754/800 (E754_U471250_S965120000)
+06-11 13:43:01 I ETA: 06.11 13.54.16 estimated_duration: 03:15:21.44 time_since_last_log: 00:01:59.14 time_per_update: 00:00:00.19
+06-11 13:43:01 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:43:01 I loss/online/main/E1: 2.3845911026000977
+06-11 13:43:01 I loss/online/total/E1: 2.3845911026000977
+06-11 13:43:01 I accuracy1/online/main/E1: 0.599778
+06-11 13:43:03 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:43:03 I accuracy1/val/main: 0.768460
+06-11 13:43:03 I loss/val/main: 0.9453125
+06-11 13:44:59 I ------------------
+06-11 13:44:59 I Epoch 755/800 (E755_U471875_S966400000)
+06-11 13:44:59 I ETA: 06.11 13.56.05 estimated_duration: 03:17:10.83 time_since_last_log: 00:01:57.89 time_per_update: 00:00:00.18
+06-11 13:44:59 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:44:59 I loss/online/main/E1: 2.3743367195129395
+06-11 13:44:59 I loss/online/total/E1: 2.3743367195129395
+06-11 13:44:59 I accuracy1/online/main/E1: 0.601207
+06-11 13:45:01 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:45:01 I accuracy1/val/main: 0.768420
+06-11 13:45:01 I loss/val/main: 0.94140625
+06-11 13:46:55 I ------------------
+06-11 13:46:55 I Epoch 756/800 (E756_U472500_S967680000)
+06-11 13:46:55 I ETA: 06.11 13.57.53 estimated_duration: 03:18:58.77 time_since_last_log: 00:01:56.80 time_per_update: 00:00:00.18
+06-11 13:46:55 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:46:55 I loss/online/main/E1: 2.3672800064086914
+06-11 13:46:55 I loss/online/total/E1: 2.3672800064086914
+06-11 13:46:55 I accuracy1/online/main/E1: 0.602834
+06-11 13:46:58 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:46:58 I accuracy1/val/main: 0.767520
+06-11 13:46:58 I loss/val/main: 0.94140625
+06-11 13:48:54 I ------------------
+06-11 13:48:54 I Epoch 757/800 (E757_U473125_S968960000)
+06-11 13:48:55 I ETA: 06.11 13.59.43 estimated_duration: 03:20:48.87 time_since_last_log: 00:01:59.11 time_per_update: 00:00:00.19
+06-11 13:48:55 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:48:55 I loss/online/main/E1: 2.3880157470703125
+06-11 13:48:55 I loss/online/total/E1: 2.3880157470703125
+06-11 13:48:55 I accuracy1/online/main/E1: 0.600564
+06-11 13:48:57 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:48:57 I accuracy1/val/main: 0.767940
+06-11 13:48:57 I loss/val/main: 0.9375
+06-11 13:50:52 I ------------------
+06-11 13:50:52 I Epoch 758/800 (E758_U473750_S970240000)
+06-11 13:50:52 I ETA: 06.11 14.01.31 estimated_duration: 03:22:37.01 time_since_last_log: 00:01:57.53 time_per_update: 00:00:00.18
+06-11 13:50:52 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:50:52 I loss/online/main/E1: 2.3747973442077637
+06-11 13:50:52 I loss/online/total/E1: 2.3747973442077637
+06-11 13:50:52 I accuracy1/online/main/E1: 0.603758
+06-11 13:50:54 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:50:54 I accuracy1/val/main: 0.768480
+06-11 13:50:54 I loss/val/main: 0.94140625
+06-11 13:52:49 I ------------------
+06-11 13:52:49 I Epoch 759/800 (E759_U474375_S971520000)
+06-11 13:52:49 I ETA: 06.11 14.03.18 estimated_duration: 03:24:24.26 time_since_last_log: 00:01:56.96 time_per_update: 00:00:00.18
+06-11 13:52:49 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:52:49 I loss/online/main/E1: 2.3751816749572754
+06-11 13:52:49 I loss/online/total/E1: 2.3751816749572754
+06-11 13:52:49 I accuracy1/online/main/E1: 0.601841
+06-11 13:52:51 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:52:51 I accuracy1/val/main: 0.768240
+06-11 13:52:51 I loss/val/main: 0.94140625
+06-11 13:54:47 I ------------------
+06-11 13:54:47 I Epoch 760/800 (E760_U475000_S972800000)
+06-11 13:54:47 I ETA: 06.11 14.05.07 estimated_duration: 03:26:12.55 time_since_last_log: 00:01:58.21 time_per_update: 00:00:00.18
+06-11 13:54:47 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:54:47 I loss/online/main/E1: 2.3676366806030273
+06-11 13:54:47 I loss/online/total/E1: 2.3676366806030273
+06-11 13:54:47 I accuracy1/online/main/E1: 0.602312
+06-11 13:54:47 I saved vislstm to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest model.th
+06-11 13:54:47 I saved vislstm optim to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest optim.th
+06-11 13:54:47 I saved trainer state_dict to .../in1k/qwdfcq26/checkpoints/trainer cp=latest.th
+06-11 13:54:50 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:54:50 I accuracy1/val/main: 0.768520
+06-11 13:54:50 I loss/val/main: 0.93359375
+06-11 13:56:46 I ------------------
+06-11 13:56:46 I Epoch 761/800 (E761_U475625_S974080000)
+06-11 13:56:46 I ETA: 06.11 14.06.55 estimated_duration: 03:28:01.02 time_since_last_log: 00:01:58.66 time_per_update: 00:00:00.18
+06-11 13:56:46 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:56:46 I loss/online/main/E1: 2.3769912719726562
+06-11 13:56:46 I loss/online/total/E1: 2.3769912719726562
+06-11 13:56:46 I accuracy1/online/main/E1: 0.600404
+06-11 13:56:48 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:56:48 I accuracy1/val/main: 0.769700
+06-11 13:56:48 I loss/val/main: 0.93359375
+06-11 13:58:44 I ------------------
+06-11 13:58:44 I Epoch 762/800 (E762_U476250_S975360000)
+06-11 13:58:44 I ETA: 06.11 14.08.42 estimated_duration: 03:29:48.23 time_since_last_log: 00:01:57.73 time_per_update: 00:00:00.18
+06-11 13:58:44 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 13:58:44 I loss/online/main/E1: 2.382483959197998
+06-11 13:58:44 I loss/online/total/E1: 2.382483959197998
+06-11 13:58:44 I accuracy1/online/main/E1: 0.598983
+06-11 13:58:46 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 13:58:46 I accuracy1/val/main: 0.769060
+06-11 13:58:46 I loss/val/main: 0.9296875
+06-11 14:00:41 I ------------------
+06-11 14:00:41 I Epoch 763/800 (E763_U476875_S976640000)
+06-11 14:00:41 I ETA: 06.11 14.10.29 estimated_duration: 03:31:34.52 time_since_last_log: 00:01:57.11 time_per_update: 00:00:00.18
+06-11 14:00:41 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:00:41 I loss/online/main/E1: 2.373950719833374
+06-11 14:00:41 I loss/online/total/E1: 2.373950719833374
+06-11 14:00:41 I accuracy1/online/main/E1: 0.600968
+06-11 14:00:43 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:00:43 I accuracy1/val/main: 0.768340
+06-11 14:00:43 I loss/val/main: 0.9375
+06-11 14:02:39 I ------------------
+06-11 14:02:39 I Epoch 764/800 (E764_U477500_S977920000)
+06-11 14:02:39 I ETA: 06.11 14.12.16 estimated_duration: 03:33:21.72 time_since_last_log: 00:01:58.26 time_per_update: 00:00:00.18
+06-11 14:02:39 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:02:39 I loss/online/main/E1: 2.371934413909912
+06-11 14:02:39 I loss/online/total/E1: 2.371934413909912
+06-11 14:02:39 I accuracy1/online/main/E1: 0.602045
+06-11 14:02:41 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:02:41 I accuracy1/val/main: 0.768540
+06-11 14:02:41 I loss/val/main: 0.9375
+06-11 14:04:36 I ------------------
+06-11 14:04:36 I Epoch 765/800 (E765_U478125_S979200000)
+06-11 14:04:36 I ETA: 06.11 14.14.01 estimated_duration: 03:35:06.82 time_since_last_log: 00:01:56.51 time_per_update: 00:00:00.18
+06-11 14:04:36 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:04:36 I loss/online/main/E1: 2.3719534873962402
+06-11 14:04:36 I loss/online/total/E1: 2.3719534873962402
+06-11 14:04:36 I accuracy1/online/main/E1: 0.601727
+06-11 14:04:38 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:04:38 I accuracy1/val/main: 0.768580
+06-11 14:04:38 I loss/val/main: 0.93359375
+06-11 14:06:34 I ------------------
+06-11 14:06:34 I Epoch 766/800 (E766_U478750_S980480000)
+06-11 14:06:34 I ETA: 06.11 14.15.48 estimated_duration: 03:36:53.56 time_since_last_log: 00:01:58.35 time_per_update: 00:00:00.18
+06-11 14:06:34 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:06:34 I loss/online/main/E1: 2.3705034255981445
+06-11 14:06:34 I loss/online/total/E1: 2.3705034255981445
+06-11 14:06:34 I accuracy1/online/main/E1: 0.601339
+06-11 14:06:36 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:06:36 I accuracy1/val/main: 0.769080
+06-11 14:06:36 I loss/val/main: 0.9375
+06-11 14:08:31 I ------------------
+06-11 14:08:31 I Epoch 767/800 (E767_U479375_S981760000)
+06-11 14:08:31 I ETA: 06.11 14.17.32 estimated_duration: 03:38:38.26 time_since_last_log: 00:01:56.65 time_per_update: 00:00:00.18
+06-11 14:08:31 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:08:31 I loss/online/main/E1: 2.36739182472229
+06-11 14:08:31 I loss/online/total/E1: 2.36739182472229
+06-11 14:08:31 I accuracy1/online/main/E1: 0.602998
+06-11 14:08:33 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:08:33 I accuracy1/val/main: 0.768900
+06-11 14:08:33 I loss/val/main: 0.93359375
+06-11 14:10:28 I ------------------
+06-11 14:10:28 I Epoch 768/800 (E768_U480000_S983040000)
+06-11 14:10:28 I ETA: 06.11 14.19.18 estimated_duration: 03:40:23.77 time_since_last_log: 00:01:57.70 time_per_update: 00:00:00.18
+06-11 14:10:28 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:10:28 I loss/online/main/E1: 2.3743762969970703
+06-11 14:10:28 I loss/online/total/E1: 2.3743762969970703
+06-11 14:10:28 I accuracy1/online/main/E1: 0.601919
+06-11 14:10:30 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:10:31 I accuracy1/val/main: 0.768940
+06-11 14:10:31 I loss/val/main: 0.93359375
+06-11 14:12:26 I ------------------
+06-11 14:12:26 I Epoch 769/800 (E769_U480625_S984320000)
+06-11 14:12:26 I ETA: 06.11 14.21.03 estimated_duration: 03:42:09.35 time_since_last_log: 00:01:58.03 time_per_update: 00:00:00.18
+06-11 14:12:26 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:12:26 I loss/online/main/E1: 2.359290599822998
+06-11 14:12:26 I loss/online/total/E1: 2.359290599822998
+06-11 14:12:26 I accuracy1/online/main/E1: 0.604098
+06-11 14:12:29 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:12:29 I accuracy1/val/main: 0.769220
+06-11 14:12:29 I loss/val/main: 0.9375
+06-11 14:14:24 I ------------------
+06-11 14:14:24 I Epoch 770/800 (E770_U481250_S985600000)
+06-11 14:14:24 I ETA: 06.11 14.22.48 estimated_duration: 03:43:54.29 time_since_last_log: 00:01:57.67 time_per_update: 00:00:00.18
+06-11 14:14:24 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:14:24 I loss/online/main/E1: 2.374236583709717
+06-11 14:14:24 I loss/online/total/E1: 2.374236583709717
+06-11 14:14:24 I accuracy1/online/main/E1: 0.601838
+06-11 14:14:24 I saved vislstm to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest model.th
+06-11 14:14:24 I saved vislstm optim to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest optim.th
+06-11 14:14:24 I saved trainer state_dict to .../in1k/qwdfcq26/checkpoints/trainer cp=latest.th
+06-11 14:14:26 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:14:26 I accuracy1/val/main: 0.769340
+06-11 14:14:26 I loss/val/main: 0.9375
+06-11 14:16:22 I ------------------
+06-11 14:16:22 I Epoch 771/800 (E771_U481875_S986880000)
+06-11 14:16:22 I ETA: 06.11 14.24.34 estimated_duration: 03:45:39.83 time_since_last_log: 00:01:58.52 time_per_update: 00:00:00.18
+06-11 14:16:22 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:16:22 I loss/online/main/E1: 2.365084409713745
+06-11 14:16:22 I loss/online/total/E1: 2.365084409713745
+06-11 14:16:22 I accuracy1/online/main/E1: 0.603478
+06-11 14:16:25 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:16:25 I accuracy1/val/main: 0.769220
+06-11 14:16:25 I loss/val/main: 0.93359375
+06-11 14:18:21 I ------------------
+06-11 14:18:21 I Epoch 772/800 (E772_U482500_S988160000)
+06-11 14:18:21 I ETA: 06.11 14.26.19 estimated_duration: 03:47:25.03 time_since_last_log: 00:01:58.45 time_per_update: 00:00:00.18
+06-11 14:18:21 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:18:21 I loss/online/main/E1: 2.360713005065918
+06-11 14:18:21 I loss/online/total/E1: 2.360713005065918
+06-11 14:18:21 I accuracy1/online/main/E1: 0.604571
+06-11 14:18:23 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:18:23 I accuracy1/val/main: 0.770200
+06-11 14:18:23 I loss/val/main: 0.93359375
+06-11 14:20:18 I ------------------
+06-11 14:20:18 I Epoch 773/800 (E773_U483125_S989440000)
+06-11 14:20:18 I ETA: 06.11 14.28.03 estimated_duration: 03:49:08.90 time_since_last_log: 00:01:57.44 time_per_update: 00:00:00.18
+06-11 14:20:18 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:20:18 I loss/online/main/E1: 2.3606796264648438
+06-11 14:20:18 I loss/online/total/E1: 2.3606796264648438
+06-11 14:20:18 I accuracy1/online/main/E1: 0.604353
+06-11 14:20:21 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:20:21 I accuracy1/val/main: 0.769480
+06-11 14:20:21 I loss/val/main: 0.93359375
+06-11 14:22:16 I ------------------
+06-11 14:22:16 I Epoch 774/800 (E774_U483750_S990720000)
+06-11 14:22:16 I ETA: 06.11 14.29.47 estimated_duration: 03:50:53.22 time_since_last_log: 00:01:58.12 time_per_update: 00:00:00.18
+06-11 14:22:16 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:22:16 I loss/online/main/E1: 2.3741719722747803
+06-11 14:22:16 I loss/online/total/E1: 2.3741719722747803
+06-11 14:22:17 I accuracy1/online/main/E1: 0.601499
+06-11 14:22:19 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:22:19 I accuracy1/val/main: 0.769460
+06-11 14:22:19 I loss/val/main: 0.93359375
+06-11 14:24:15 I ------------------
+06-11 14:24:15 I Epoch 775/800 (E775_U484375_S992000000)
+06-11 14:24:15 I ETA: 06.11 14.31.32 estimated_duration: 03:52:37.70 time_since_last_log: 00:01:58.55 time_per_update: 00:00:00.18
+06-11 14:24:15 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:24:15 I loss/online/main/E1: 2.3542861938476562
+06-11 14:24:15 I loss/online/total/E1: 2.3542861938476562
+06-11 14:24:15 I accuracy1/online/main/E1: 0.603598
+06-11 14:24:17 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:24:17 I accuracy1/val/main: 0.769460
+06-11 14:24:17 I loss/val/main: 0.93359375
+06-11 14:26:14 I ------------------
+06-11 14:26:14 I Epoch 776/800 (E776_U485000_S993280000)
+06-11 14:26:14 I ETA: 06.11 14.33.16 estimated_duration: 03:54:22.11 time_since_last_log: 00:01:58.73 time_per_update: 00:00:00.18
+06-11 14:26:14 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:26:14 I loss/online/main/E1: 2.3672547340393066
+06-11 14:26:14 I loss/online/total/E1: 2.3672547340393066
+06-11 14:26:14 I accuracy1/online/main/E1: 0.602525
+06-11 14:26:16 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:26:16 I accuracy1/val/main: 0.769860
+06-11 14:26:16 I loss/val/main: 0.93359375
+06-11 14:28:12 I ------------------
+06-11 14:28:12 I Epoch 777/800 (E777_U485625_S994560000)
+06-11 14:28:12 I ETA: 06.11 14.35.00 estimated_duration: 03:56:05.53 time_since_last_log: 00:01:58.04 time_per_update: 00:00:00.18
+06-11 14:28:12 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:28:12 I loss/online/main/E1: 2.371931552886963
+06-11 14:28:12 I loss/online/total/E1: 2.371931552886963
+06-11 14:28:12 I accuracy1/online/main/E1: 0.600633
+06-11 14:28:14 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:28:14 I accuracy1/val/main: 0.769380
+06-11 14:28:14 I loss/val/main: 0.93359375
+06-11 14:30:10 I ------------------
+06-11 14:30:10 I Epoch 778/800 (E778_U486250_S995840000)
+06-11 14:30:10 I ETA: 06.11 14.36.43 estimated_duration: 03:57:48.85 time_since_last_log: 00:01:58.20 time_per_update: 00:00:00.18
+06-11 14:30:10 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:30:10 I loss/online/main/E1: 2.3670501708984375
+06-11 14:30:10 I loss/online/total/E1: 2.3670501708984375
+06-11 14:30:10 I accuracy1/online/main/E1: 0.602605
+06-11 14:30:12 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:30:12 I accuracy1/val/main: 0.769520
+06-11 14:30:12 I loss/val/main: 0.93359375
+06-11 14:32:08 I ------------------
+06-11 14:32:08 I Epoch 779/800 (E779_U486875_S997120000)
+06-11 14:32:08 I ETA: 06.11 14.38.25 estimated_duration: 03:59:31.41 time_since_last_log: 00:01:57.72 time_per_update: 00:00:00.18
+06-11 14:32:08 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:32:08 I loss/online/main/E1: 2.359052896499634
+06-11 14:32:08 I loss/online/total/E1: 2.359052896499634
+06-11 14:32:08 I accuracy1/online/main/E1: 0.603918
+06-11 14:32:10 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:32:10 I accuracy1/val/main: 0.769040
+06-11 14:32:10 I loss/val/main: 0.9296875
+06-11 14:34:06 I ------------------
+06-11 14:34:06 I Epoch 780/800 (E780_U487500_S998400000)
+06-11 14:34:06 I ETA: 06.11 14.40.09 estimated_duration: 04:01:14.73 time_since_last_log: 00:01:58.71 time_per_update: 00:00:00.18
+06-11 14:34:06 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:34:06 I loss/online/main/E1: 2.366272449493408
+06-11 14:34:06 I loss/online/total/E1: 2.366272449493408
+06-11 14:34:06 I accuracy1/online/main/E1: 0.603803
+06-11 14:34:07 I saved vislstm to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest model.th
+06-11 14:34:07 I saved vislstm optim to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest optim.th
+06-11 14:34:07 I saved trainer state_dict to .../in1k/qwdfcq26/checkpoints/trainer cp=latest.th
+06-11 14:34:09 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:34:09 I accuracy1/val/main: 0.769100
+06-11 14:34:09 I loss/val/main: 0.93359375
+06-11 14:36:04 I ------------------
+06-11 14:36:04 I Epoch 781/800 (E781_U488125_S999680000)
+06-11 14:36:04 I ETA: 06.11 14.41.51 estimated_duration: 04:02:56.46 time_since_last_log: 00:01:57.43 time_per_update: 00:00:00.18
+06-11 14:36:04 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:36:04 I loss/online/main/E1: 2.366079092025757
+06-11 14:36:04 I loss/online/total/E1: 2.366079092025757
+06-11 14:36:04 I accuracy1/online/main/E1: 0.601384
+06-11 14:36:06 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:36:06 I accuracy1/val/main: 0.769200
+06-11 14:36:06 I loss/val/main: 0.93359375
+06-11 14:38:02 I ------------------
+06-11 14:38:02 I Epoch 782/800 (E782_U488750_S1000960000)
+06-11 14:38:02 I ETA: 06.11 14.43.32 estimated_duration: 04:04:38.10 time_since_last_log: 00:01:57.59 time_per_update: 00:00:00.18
+06-11 14:38:02 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:38:02 I loss/online/main/E1: 2.360664129257202
+06-11 14:38:02 I loss/online/total/E1: 2.360664129257202
+06-11 14:38:02 I accuracy1/online/main/E1: 0.603428
+06-11 14:38:04 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:38:04 I accuracy1/val/main: 0.769740
+06-11 14:38:04 I loss/val/main: 0.9296875
+06-11 14:40:00 I ------------------
+06-11 14:40:00 I Epoch 783/800 (E783_U489375_S1002240000)
+06-11 14:40:00 I ETA: 06.11 14.45.15 estimated_duration: 04:06:20.69 time_since_last_log: 00:01:58.78 time_per_update: 00:00:00.19
+06-11 14:40:00 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:40:00 I loss/online/main/E1: 2.3659355640411377
+06-11 14:40:00 I loss/online/total/E1: 2.3659355640411377
+06-11 14:40:00 I accuracy1/online/main/E1: 0.601901
+06-11 14:40:03 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:40:03 I accuracy1/val/main: 0.769920
+06-11 14:40:03 I loss/val/main: 0.9296875
+06-11 14:41:59 I ------------------
+06-11 14:41:59 I Epoch 784/800 (E784_U490000_S1003520000)
+06-11 14:41:59 I ETA: 06.11 14.46.57 estimated_duration: 04:08:02.57 time_since_last_log: 00:01:58.33 time_per_update: 00:00:00.18
+06-11 14:41:59 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:41:59 I loss/online/main/E1: 2.361205577850342
+06-11 14:41:59 I loss/online/total/E1: 2.361205577850342
+06-11 14:41:59 I accuracy1/online/main/E1: 0.604467
+06-11 14:42:01 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:42:01 I accuracy1/val/main: 0.769700
+06-11 14:42:01 I loss/val/main: 0.93359375
+06-11 14:43:56 I ------------------
+06-11 14:43:56 I Epoch 785/800 (E785_U490625_S1004800000)
+06-11 14:43:56 I ETA: 06.11 14.48.37 estimated_duration: 04:09:42.88 time_since_last_log: 00:01:57.05 time_per_update: 00:00:00.18
+06-11 14:43:56 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:43:56 I loss/online/main/E1: 2.3601903915405273
+06-11 14:43:56 I loss/online/total/E1: 2.3601903915405273
+06-11 14:43:56 I accuracy1/online/main/E1: 0.603969
+06-11 14:43:58 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:43:58 I accuracy1/val/main: 0.769520
+06-11 14:43:58 I loss/val/main: 0.93359375
+06-11 14:45:53 I ------------------
+06-11 14:45:53 I Epoch 786/800 (E786_U491250_S1006080000)
+06-11 14:45:53 I ETA: 06.11 14.50.18 estimated_duration: 04:11:23.57 time_since_last_log: 00:01:57.68 time_per_update: 00:00:00.18
+06-11 14:45:53 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:45:53 I loss/online/main/E1: 2.3665552139282227
+06-11 14:45:53 I loss/online/total/E1: 2.3665552139282227
+06-11 14:45:53 I accuracy1/online/main/E1: 0.604166
+06-11 14:45:56 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:45:56 I accuracy1/val/main: 0.769460
+06-11 14:45:56 I loss/val/main: 0.93359375
+06-11 14:47:53 I ------------------
+06-11 14:47:53 I Epoch 787/800 (E787_U491875_S1007360000)
+06-11 14:47:53 I ETA: 06.11 14.52.00 estimated_duration: 04:13:05.56 time_since_last_log: 00:01:59.20 time_per_update: 00:00:00.19
+06-11 14:47:53 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:47:53 I loss/online/main/E1: 2.3723702430725098
+06-11 14:47:53 I loss/online/total/E1: 2.3723702430725098
+06-11 14:47:53 I accuracy1/online/main/E1: 0.602210
+06-11 14:47:55 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:47:55 I accuracy1/val/main: 0.769660
+06-11 14:47:55 I loss/val/main: 0.93359375
+06-11 14:49:49 I ------------------
+06-11 14:49:49 I Epoch 788/800 (E788_U492500_S1008640000)
+06-11 14:49:49 I ETA: 06.11 14.53.38 estimated_duration: 04:14:44.12 time_since_last_log: 00:01:56.08 time_per_update: 00:00:00.18
+06-11 14:49:49 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:49:49 I loss/online/main/E1: 2.3637280464172363
+06-11 14:49:49 I loss/online/total/E1: 2.3637280464172363
+06-11 14:49:49 I accuracy1/online/main/E1: 0.603770
+06-11 14:49:51 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:49:51 I accuracy1/val/main: 0.770080
+06-11 14:49:51 I loss/val/main: 0.93359375
+06-11 14:51:46 I ------------------
+06-11 14:51:46 I Epoch 789/800 (E789_U493125_S1009920000)
+06-11 14:51:46 I ETA: 06.11 14.55.18 estimated_duration: 04:16:24.13 time_since_last_log: 00:01:57.76 time_per_update: 00:00:00.18
+06-11 14:51:46 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:51:46 I loss/online/main/E1: 2.3579964637756348
+06-11 14:51:46 I loss/online/total/E1: 2.3579964637756348
+06-11 14:51:46 I accuracy1/online/main/E1: 0.604363
+06-11 14:51:49 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:51:49 I accuracy1/val/main: 0.769740
+06-11 14:51:49 I loss/val/main: 0.93359375
+06-11 14:53:44 I ------------------
+06-11 14:53:44 I Epoch 790/800 (E790_U493750_S1011200000)
+06-11 14:53:44 I ETA: 06.11 14.56.58 estimated_duration: 04:18:03.72 time_since_last_log: 00:01:57.58 time_per_update: 00:00:00.18
+06-11 14:53:44 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:53:44 I loss/online/main/E1: 2.3524160385131836
+06-11 14:53:44 I loss/online/total/E1: 2.3524160385131836
+06-11 14:53:44 I accuracy1/online/main/E1: 0.606371
+06-11 14:53:44 I saved vislstm to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest model.th
+06-11 14:53:44 I saved vislstm optim to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest optim.th
+06-11 14:53:44 I saved trainer state_dict to .../in1k/qwdfcq26/checkpoints/trainer cp=latest.th
+06-11 14:53:46 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:53:46 I accuracy1/val/main: 0.769760
+06-11 14:53:46 I loss/val/main: 0.93359375
+06-11 14:55:41 I ------------------
+06-11 14:55:41 I Epoch 791/800 (E791_U494375_S1012480000)
+06-11 14:55:41 I ETA: 06.11 14.58.37 estimated_duration: 04:19:42.70 time_since_last_log: 00:01:57.24 time_per_update: 00:00:00.18
+06-11 14:55:41 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:55:41 I loss/online/main/E1: 2.365718364715576
+06-11 14:55:41 I loss/online/total/E1: 2.365718364715576
+06-11 14:55:41 I accuracy1/online/main/E1: 0.601729
+06-11 14:55:43 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:55:44 I accuracy1/val/main: 0.770340
+06-11 14:55:44 I loss/val/main: 0.93359375
+06-11 14:57:40 I ------------------
+06-11 14:57:40 I Epoch 792/800 (E792_U495000_S1013760000)
+06-11 14:57:40 I ETA: 06.11 15.00.17 estimated_duration: 04:21:22.53 time_since_last_log: 00:01:58.32 time_per_update: 00:00:00.18
+06-11 14:57:40 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:57:40 I loss/online/main/E1: 2.3538122177124023
+06-11 14:57:40 I loss/online/total/E1: 2.3538122177124023
+06-11 14:57:40 I accuracy1/online/main/E1: 0.604617
+06-11 14:57:42 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:57:42 I accuracy1/val/main: 0.769940
+06-11 14:57:42 I loss/val/main: 0.93359375
+06-11 14:59:37 I ------------------
+06-11 14:59:37 I Epoch 793/800 (E793_U495625_S1015040000)
+06-11 14:59:37 I ETA: 06.11 15.01.55 estimated_duration: 04:23:01.08 time_since_last_log: 00:01:57.32 time_per_update: 00:00:00.18
+06-11 14:59:37 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 14:59:37 I loss/online/main/E1: 2.3635640144348145
+06-11 14:59:37 I loss/online/total/E1: 2.3635640144348145
+06-11 14:59:37 I accuracy1/online/main/E1: 0.603060
+06-11 14:59:39 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 14:59:39 I accuracy1/val/main: 0.770200
+06-11 14:59:39 I loss/val/main: 0.9296875
+06-11 15:01:36 I ------------------
+06-11 15:01:36 I Epoch 794/800 (E794_U496250_S1016320000)
+06-11 15:01:36 I ETA: 06.11 15.03.35 estimated_duration: 04:24:41.05 time_since_last_log: 00:01:58.96 time_per_update: 00:00:00.19
+06-11 15:01:36 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 15:01:36 I loss/online/main/E1: 2.365954875946045
+06-11 15:01:36 I loss/online/total/E1: 2.365954875946045
+06-11 15:01:36 I accuracy1/online/main/E1: 0.602143
+06-11 15:01:38 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 15:01:38 I accuracy1/val/main: 0.769580
+06-11 15:01:38 I loss/val/main: 0.93359375
+06-11 15:03:33 I ------------------
+06-11 15:03:33 I Epoch 795/800 (E795_U496875_S1017600000)
+06-11 15:03:33 I ETA: 06.11 15.05.13 estimated_duration: 04:26:19.32 time_since_last_log: 00:01:57.53 time_per_update: 00:00:00.18
+06-11 15:03:33 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 15:03:33 I loss/online/main/E1: 2.3693485260009766
+06-11 15:03:33 I loss/online/total/E1: 2.3693485260009766
+06-11 15:03:33 I accuracy1/online/main/E1: 0.601133
+06-11 15:03:36 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 15:03:36 I accuracy1/val/main: 0.770500
+06-11 15:03:36 I loss/val/main: 0.93359375
+06-11 15:05:31 I ------------------
+06-11 15:05:31 I Epoch 796/800 (E796_U497500_S1018880000)
+06-11 15:05:31 I ETA: 06.11 15.06.51 estimated_duration: 04:27:57.37 time_since_last_log: 00:01:57.55 time_per_update: 00:00:00.18
+06-11 15:05:31 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 15:05:31 I loss/online/main/E1: 2.365569591522217
+06-11 15:05:31 I loss/online/total/E1: 2.365569591522217
+06-11 15:05:31 I accuracy1/online/main/E1: 0.602686
+06-11 15:05:33 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 15:05:33 I accuracy1/val/main: 0.770280
+06-11 15:05:33 I loss/val/main: 0.93359375
+06-11 15:07:29 I ------------------
+06-11 15:07:29 I Epoch 797/800 (E797_U498125_S1020160000)
+06-11 15:07:29 I ETA: 06.11 15.08.30 estimated_duration: 04:29:35.57 time_since_last_log: 00:01:57.95 time_per_update: 00:00:00.18
+06-11 15:07:29 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 15:07:29 I loss/online/main/E1: 2.3653249740600586
+06-11 15:07:29 I loss/online/total/E1: 2.3653249740600586
+06-11 15:07:29 I accuracy1/online/main/E1: 0.602949
+06-11 15:07:31 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 15:07:31 I accuracy1/val/main: 0.770240
+06-11 15:07:31 I loss/val/main: 0.93359375
+06-11 15:09:27 I ------------------
+06-11 15:09:27 I Epoch 798/800 (E798_U498750_S1021440000)
+06-11 15:09:27 I ETA: 06.11 15.10.08 estimated_duration: 04:31:13.75 time_since_last_log: 00:01:58.17 time_per_update: 00:00:00.18
+06-11 15:09:27 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 15:09:27 I loss/online/main/E1: 2.363649368286133
+06-11 15:09:27 I loss/online/total/E1: 2.363649368286133
+06-11 15:09:27 I accuracy1/online/main/E1: 0.603884
+06-11 15:09:29 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 15:09:29 I accuracy1/val/main: 0.769860
+06-11 15:09:29 I loss/val/main: 0.93359375
+06-11 15:11:25 I ------------------
+06-11 15:11:25 I Epoch 799/800 (E799_U499375_S1022720000)
+06-11 15:11:25 I ETA: 06.11 15.11.46 estimated_duration: 04:32:51.64 time_since_last_log: 00:01:58.13 time_per_update: 00:00:00.18
+06-11 15:11:25 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 15:11:25 I loss/online/main/E1: 2.3662571907043457
+06-11 15:11:25 I loss/online/total/E1: 2.3662571907043457
+06-11 15:11:25 I accuracy1/online/main/E1: 0.601602
+06-11 15:11:27 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 15:11:28 I accuracy1/val/main: 0.769900
+06-11 15:11:28 I loss/val/main: 0.93359375
+06-11 15:13:23 I ------------------
+06-11 15:13:23 I Epoch 800/800 (E800_U500000_S1024000000)
+06-11 15:13:23 I ETA: 06.11 15.13.23 estimated_duration: 04:34:29.41 time_since_last_log: 00:01:58.25 time_per_update: 00:00:00.18
+06-11 15:13:23 I data=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
+ 0.00, 0.00, 0.00, 0.00] update=[0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,
+ 0.18, 0.18, 0.18, 0.18]
+06-11 15:13:23 I loss/online/main/E1: 2.3582675457000732
+06-11 15:13:23 I loss/online/total/E1: 2.3582675457000732
+06-11 15:13:23 I accuracy1/online/main/E1: 0.604228
+06-11 15:13:24 I saved vislstm to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest model.th
+06-11 15:13:24 I saved vislstm optim to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest optim.th
+06-11 15:13:24 I saved trainer state_dict to .../in1k/qwdfcq26/checkpoints/trainer cp=latest.th
+06-11 15:13:26 I profiling/offline_accuracy_callback/val.x.class: data=0.00 forward=0.09
+06-11 15:13:26 I accuracy1/val/main: 0.769840
+06-11 15:13:26 I loss/val/main: 0.93359375
+06-11 15:13:26 I ------------------
+06-11 15:13:26 I AFTER TRAINING
+06-11 15:13:26 I ------------------
+06-11 15:13:26 I total_train_data_time:   [29.83, 30.95, 28.61, 29.52, 27.47, 27.83, 28.29, 29.33, 30.02, 31.39,
+ 29.47, 28.25, 30.68, 29.84, 29.96, 29.40]
+06-11 15:13:26 I total_update_time: [16014.68, 16000.14, 16020.60, 16008.67, 16035.80, 16031.28, 16014.32,
+ 16014.98, 16002.56, 15976.49, 16001.08, 16023.49, 15994.17, 15997.87,
+ 15997.60, 16000.35]
+06-11 15:13:26 I saved vislstm to .../in1k/qwdfcq26/checkpoints/vislstm cp=last model.th
+06-11 15:13:26 I saved trainer state_dict to .../in1k/qwdfcq26/checkpoints/trainer cp=last.th
+06-11 15:13:26 I saved vislstm to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest model.th
+06-11 15:13:26 I saved vislstm optim to .../in1k/qwdfcq26/checkpoints/vislstm cp=latest optim.th
+06-11 15:13:26 I saved trainer state_dict to .../in1k/qwdfcq26/checkpoints/trainer cp=latest.th
+06-11 15:13:26 I ------------------
+06-11 15:13:26 I offline_accuracy_callback dataset_key=val.x.class
+06-11 15:13:26 I total_data_time:    [0.05, 0.05, 0.05, 0.05, 0.04, 0.04, 0.04, 0.05, 0.05, 0.05, 0.04, 0.04,
+ 0.04, 0.05, 0.05, 0.05]
+06-11 15:13:26 I total_forward_time: [12.55, 12.48, 12.45, 12.50, 12.64, 12.65, 12.53, 12.49, 12.55, 12.51,
+ 12.56, 12.55, 12.54, 12.50, 12.52, 12.50]
+06-11 15:13:26 I writing 1820 log entries to .../in1k/qwdfcq26/primitive/entries.th
+06-11 15:13:26 I ------------------
+06-11 15:13:26 I summarize logvalues
+06-11 15:13:26 I loss/online/main/U50/min: 2.297952651977539
+06-11 15:13:26 I loss/online/total/U50/min: 2.297952651977539
+06-11 15:13:26 I accuracy1/online/main/U50/max: 0.6159374713897705
+06-11 15:13:26 I loss/online/main/E1/min: 2.3524160385131836
+06-11 15:13:26 I loss/online/total/E1/min: 2.3524160385131836
+06-11 15:13:26 I accuracy1/online/main/E1/max: 0.6063710451126099
+06-11 15:13:26 I accuracy1/val/main/max: 0.7705000042915344
+06-11 15:13:26 I loss/val/main/min: 0.9296875
+06-11 15:13:26 I pushing summarized logvalues to wandb
+06-11 15:13:26 W cuda profiling is not activated -> all cuda calls are executed asynchronously -> this will result in inaccurate profiling times where the time for all asynchronous cuda operation will be attributed to the first synchronous cuda operation https://github.com/BenediktAlkin/KappaProfiler?tab=readme-ov-file#time-async-operations
+06-11 15:13:26 I full profiling times:
+ 16743.94 train
+     0.00 train.DatasetStatsCallback.before_training
+     0.00 train.ParamCountCallback.before_training
+     0.00 train.CopyPreviousConfigCallback.before_training
+     0.00 train.CopyPreviousSummaryCallback.before_training
+     0.00 train.ProgressCallback(every_n_epochs=1).before_training
+     0.00 train.OnlineAccuracyCallback(every_n_updates=50).before_training
+     0.00 train.OnlineAccuracyCallback(every_n_epochs=1).before_training
+     0.00 train.CheckpointCallback().before_training
+     0.00 train.CheckpointCallback(every_n_epochs=10).before_training
+     0.00 train.OfflineAccuracyCallback(every_n_epochs=1).before_training
+     1.31 train.iterator
+    29.83 train.data_loading
+ 16014.68 train.update
+     0.88 train.OnlineLossCallback(every_n_epochs=1).track_after_accumulation_step
+     0.46 train.OnlineLossCallback(every_n_updates=50).track_after_accumulation_step
+    41.40 train.OnlineAccuracyCallback(every_n_updates=50).track_after_accumulation_step
+    25.12 train.OnlineAccuracyCallback(every_n_epochs=1).track_after_accumulation_step
+     0.37 train.TrainTimeCallback(every_n_epochs=1).track_after_update_step
+     0.05 train.LrCallback(every_n_updates=50).after_update
+     0.01 train.FreezerCallback(every_n_updates=50).after_update
+    13.24 train.OnlineLossCallback(every_n_updates=50).after_update
+     0.75 train.OnlineAccuracyCallback(every_n_updates=50).after_update
+     0.12 train.ProgressCallback(every_n_epochs=1).after_epoch
+     0.54 train.TrainTimeCallback(every_n_epochs=1).after_epoch
+     0.55 train.OnlineLossCallback(every_n_epochs=1).after_epoch
+     0.40 train.OnlineAccuracyCallback(every_n_epochs=1).after_epoch
+   321.33 train.OfflineAccuracyCallback(every_n_epochs=1).after_epoch
+     2.98 train.CheckpointCallback(every_n_epochs=10).after_epoch
+     0.07 train.TrainTimeCallback(every_n_epochs=1).after_training
+     0.06 train.CheckpointCallback().after_training
+     0.19 train.CheckpointCallback(every_n_epochs=10).after_training
+06-11 15:13:26 I ------------------
+06-11 15:13:26 I CLEANUP
+06-11 15:13:26 I ------------------
+06-11 15:13:26 I encountered 1 warnings
+06-11 15:13:26 I encountered 0 errors
