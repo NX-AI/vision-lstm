@@ -16,23 +16,43 @@ even blocks process the image from bottom right to top left.
 </p>
 
 
-We train and evaluate ViL models on ImageNet-1K, for which we attach a linear classification head and use the average
-of the first and last token as input to the classifier.
+We pre-train ViL models on ImageNet-1K, for which we attach a linear classification head and use the 
+concatenation of the first and last token as input to the classifier. Afterwards, the pre-trained model is evaluated
+also on transfer classification and semantic segmentation downstream tasks.
 
-Our new model can outperform heavily optimized ViT baselines such as [DeiT](https://arxiv.org/abs/2012.12877) on 
-smaller models and also heavily outperforms other sequential vision models such as 
-[Vision-Mamba](https://arxiv.org/abs/2401.09417) (Vim)
+Our new model performs favorably against heavily optimized ViT baselines such as [DeiT](https://arxiv.org/abs/2012.12877)
+and [Vision-Mamba](https://arxiv.org/abs/2401.09417) (Vim) on ImageNet-1K classification, ADE20K semantic segmentation
+and VTAB-1K transfer classification.
+
 
 <p align="center">
-<img width="40%" alt="results_tiny_small" src="https://raw.githubusercontent.com/nx-ai/vision-lstm/main/docs/imgs/results_tiny_small.png">
+<img width="60%" alt="flops_vs_performance" src="https://raw.githubusercontent.com/nx-ai/vision-lstm/main/docs/imgs/flops_vs_performance.png">
 </p>
 
 
-However, as ViT training pipelines were heavily optimized over the last few years, ViL doesn't outperform the most 
-optimized ViT baselines yet. Nevertheless, it shows strong performances by achieving comparable results to 
-[DeiT](https://arxiv.org/abs/2012.12877). Note that training on this scale is still quite costly due to lack of custom
-hardware implementations such as CUDA kernels. So the hyperparameters for this scale are far from optimal.
+We compare against a variety of isotropic models on ImageNet-1K, where ViL performs best on the tiny and small model 
+scale, outperforming transformers (DeiT), CNNs (ConvNeXt) and vision adaptions of other sequential models such as
+RWKV (VRWKV) and Mamba (Vim, Mamba&reg;).
+On the base model scale, ViL achieves good results but heavily optimized transformer models, that underwent multiple
+cycles of hyperparameter tuning, (DeiT-III) perform best.
 
 <p align="center">
-<img width="40%" alt="results_base" src="https://raw.githubusercontent.com/nx-ai/vision-lstm/main/docs/imgs/results_base.png">
+<img width="50%" alt="results_imagenet" src="https://raw.githubusercontent.com/nx-ai/vision-lstm/main/docs/imgs/results_imagenet.png">
+</p>
+
+
+On ADE20K semantic segmentation, ViL also performs very well, even outperforming DeiT-III-B despite the lower 
+ImageNet-1K accuracy. 
+
+<p align="center">
+<img width="50%" alt="results_ade20k" src="https://raw.githubusercontent.com/nx-ai/vision-lstm/main/docs/imgs/results_ade20k.png">
+</p>
+
+
+On a diverse set of 19 transfer classification tasks contained in VTAB-1K benchmark, ViL performs best on the average over all 19
+datasets. Notably, ViL performs exceptionally well on the 8 structured datasets of the VTAB-1K benchmark, even 
+outperforming DeiT-III-B. 
+
+<p align="center">
+<img width="50%" alt="results_vtab1k" src="https://raw.githubusercontent.com/nx-ai/vision-lstm/main/docs/imgs/results_vtab1k.png">
 </p>
