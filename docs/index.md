@@ -38,7 +38,7 @@ On the base model scale, ViL achieves good results but heavily optimized transfo
 cycles of hyperparameter tuning, (DeiT-III) perform best.
 
 <p align="center">
-<img width="100%" alt="results_imagenet" src="https://raw.githubusercontent.com/nx-ai/vision-lstm/main/docs/imgs/results_imagenet.png">
+<img width="80%" alt="results_imagenet" src="https://raw.githubusercontent.com/nx-ai/vision-lstm/main/docs/imgs/results_imagenet.png">
 </p>
 
 
@@ -46,7 +46,7 @@ On ADE20K semantic segmentation, ViL also performs very well, even outperforming
 ImageNet-1K accuracy. 
 
 <p align="center">
-<img width="100%" alt="results_ade20k" src="https://raw.githubusercontent.com/nx-ai/vision-lstm/main/docs/imgs/results_ade20k.png">
+<img width="80%" alt="results_ade20k" src="https://raw.githubusercontent.com/nx-ai/vision-lstm/main/docs/imgs/results_ade20k.png">
 </p>
 
 
@@ -55,5 +55,5 @@ datasets. Notably, ViL performs exceptionally well on the 8 structured datasets 
 outperforming DeiT-III-B. 
 
 <p align="center">
-<img width="100%" alt="results_vtab1k" src="https://raw.githubusercontent.com/nx-ai/vision-lstm/main/docs/imgs/results_vtab1k.png">
+<img width="80%" alt="results_vtab1k" src="https://raw.githubusercontent.com/nx-ai/vision-lstm/main/docs/imgs/results_vtab1k.png">
 </p>
