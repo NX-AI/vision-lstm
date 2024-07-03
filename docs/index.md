@@ -11,6 +11,7 @@ In order to adjust xLSTM (an autoregressive model) to better handle non-autoregr
 we employ alternating bi-directional mLSTM blocks. Odd blocks process the image row-wise from top left to bottom right, while
 even blocks process the image from bottom right to top left.
 
+
 <p align="center">
 <img width="100%" alt="vision_lstm_schematic" src="https://raw.githubusercontent.com/nx-ai/vision-lstm/main/docs/imgs/schematic.svg">
 </p>
