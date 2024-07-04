@@ -50,6 +50,10 @@ model = torch.hub.load(
 )
 ```
 
+See [below](https://github.com/NX-AI/vision-lstm?tab=readme-ov-file#version1-pre-trained-models) or 
+[Appendix A](https://arxiv.org/abs/2406.04303)) for a list of changes between `VisionLSTM` and `VisionLSTM2`. 
+We recommend to use `VisionLSTM2` as we found it to perform better but keep `VisionLSTM` for backward compatibility.
+
 ## Full training pipeline (architecture, datasets, hyperparameters, ...)
 
 If you want to train models with our code-base, follow the setup instructions from 
