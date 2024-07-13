@@ -29,6 +29,9 @@ also a full training pipeline.
 The package [vision_lstm](https://github.com/NX-AI/vision-lstm/tree/main/vision_lstm) provides a standalone
 implementation in the style of [timm](https://github.com/huggingface/pytorch-image-models).
 
+An example how to train ViL on CIFAR10 using the [vision_lstm](https://github.com/NX-AI/vision-lstm/tree/main/vision_lstm) 
+package is provided [here](https://github.com/NX-AI/vision-lstm/tree/main/tutorials/cifar10.ipynb).
+
 If you only need the model architecture, you can load it in a single line via torchhub or copy the
 [vision_lstm](https://github.com/NX-AI/vision-lstm/tree/main/vision_lstm) folder into your own code-base.
 Note that for `VisionLSTM2` we consider a single block to consist of two subblocks (the first one going from top-right 
