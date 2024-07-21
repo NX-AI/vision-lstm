@@ -57,12 +57,15 @@ See [below](https://github.com/NX-AI/vision-lstm?tab=readme-ov-file#version1-pre
 [Appendix A](https://arxiv.org/abs/2406.04303) for a list of changes between `VisionLSTM` and `VisionLSTM2`. 
 We recommend to use `VisionLSTM2` as we found it to perform better but keep `VisionLSTM` for backward compatibility.
 
-## Full training pipeline (architecture, datasets, hyperparameters, ...)
+## Full training/eval pipeline (architecture, datasets, hyperparameters, classification, segmentation, ...)
 
 If you want to train models with our code-base, follow the setup instructions from 
 [SETUP.md](https://github.com/NX-AI/vision-lstm/tree/main/src/SETUP.md).
 To start runs, follow the instructions from [RUN.md](https://github.com/NX-AI/vision-lstm/tree/main/src/RUN.md).
 
+All configurations/hyperparameters for all training/evaluation runs can be found [here](https://github.com/NX-AI/vision-lstm/tree/main/src/vislstm/yamls).
+
+VTAB-1K evaluations were conducted with [this](https://github.com/BenediktAlkin/vtab1k-pytorch) codebase. 
 
 # Pre-trained models
 
