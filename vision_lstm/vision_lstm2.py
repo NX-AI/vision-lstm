@@ -128,7 +128,7 @@ def parallel_stabilized_simple(
     # retrieved values
     h_tilde_state = C_matrix_normalized @ values  # (B, NH, S, DH)
 
-    return h_tilde_state
+    return h_tilde_state, qk_matrix, C_matrix_normalized
 
 
 class LinearHeadwiseExpand(nn.Module):
@@ -300,6 +300,10 @@ class MatrixLSTMCell(nn.Module):
         self.causal_mask_cache = {}
         self.reset_parameters()
 
+        # allow hooking into mLSTM calculations
+        self.qk_hook = nn.Identity()
+        self.c_hook = nn.Identity()
+
     def forward(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
         B, S, _ = q.shape  # (B, S, H)
 
@@ -325,7 +329,7 @@ class MatrixLSTMCell(nn.Module):
             causal_mask = torch.tril(torch.ones(S, S, dtype=torch.bool, device=q.device))
             self.causal_mask_cache[(S, str(q.device))] = causal_mask
 
-        h_state = parallel_stabilized_simple(
+        h_state, qk_matrix, C_matrix_normalized = parallel_stabilized_simple(
             queries=q,
             keys=k,
             values=v,
@@ -333,6 +337,10 @@ class MatrixLSTMCell(nn.Module):
             fgate_preact=fgate_preact,
             lower_triangular_matrix=causal_mask,
         )  # (B, NH, S, DH)
+
+        # hooks
+        self.qk_hook(qk_matrix)
+        self.c_hook(C_matrix_normalized)
 
         h_state_norm = self.outnorm(h_state)  # (B, NH, S, DH)
         h_state_norm = h_state_norm.transpose(1, 2).reshape(B, S, -1)  # (B, NH, S, DH) -> (B, S, NH, DH) -> (B, S, H)
