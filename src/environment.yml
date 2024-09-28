@@ -14,5 +14,5 @@ dependencies:
       - kappaconfig==1.0.31
       - kappaschedules==0.0.31
       - kappadata==1.4.13
-      - kappamodules==0.1.70
+      - kappamodules==0.1.76
       - kappaprofiler==1.0.11

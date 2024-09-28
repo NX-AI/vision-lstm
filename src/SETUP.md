@@ -17,7 +17,7 @@ You can also manually install the dependencies via pip
 ```
 pip install torch==2.1.1+cu121 -f https://download.pytorch.org/whl/torch_stable.html
 pip install torchvision==0.16.1+cu121 -f https://download.pytorch.org/whl/torch_stable.html
-pip install kappamodules==0.1.70
+pip install kappamodules==0.1.76
 pip install kappaschedules==0.0.31
 pip install kappadata==1.4.13
 pip install kappaconfig==1.0.31

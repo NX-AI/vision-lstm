@@ -91,7 +91,7 @@ which evaluates the models on the ImageNet-1K validation set.
 Checkpoints for our reimplementation of DeiT-III-T are provided as raw checkpoint 
 [here](https://ml.jku.at/research/vision_lstm/download/) and can be loaded from torchhub 
 (the vision transformer implementation is based on [KappaModules](https://github.com/BenediktAlkin/KappaModules) so 
-you need to install it before loading a ViT checkpoint via torchhub by running `pip install kappamodules==0.1.70`).
+you need to install it before loading a ViT checkpoint via torchhub by running `pip install kappamodules==0.1.76`).
 
 ```
 model = torch.hub.load("nx-ai/vision-lstm", "deit3-tiny-e400")  # 75.6%
