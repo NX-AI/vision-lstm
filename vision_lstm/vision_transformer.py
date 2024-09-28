@@ -2,6 +2,8 @@ import einops
 import torch
 from torch import nn
 
+from .vision_lstm_util import interpolate_sincos
+
 
 class VisionTransformer(nn.Module):
     def __init__(
@@ -72,6 +74,13 @@ class VisionTransformer(nn.Module):
         )
 
         self.output_shape = (self.patch_embed.num_patches + self.cls_tokens.num_tokens, dim)
+
+    def load_state_dict(self, state_dict, strict=True):
+        # interpolate pos_embed for different resolution (e.g. for fine-tuning on higher-resolution)
+        old_pos_embed = state_dict["pos_embed.embed"]
+        if old_pos_embed.shape != self.pos_embed.embed.shape:
+            state_dict["pos_embed.embed"] = interpolate_sincos(embed=old_pos_embed, seqlens=self.pos_embed.seqlens)
+        return super().load_state_dict(state_dict=state_dict, strict=strict)
 
     def forward(self, x):
         # embed patches
