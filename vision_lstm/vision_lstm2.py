@@ -657,7 +657,7 @@ class VisionLSTM2(nn.Module):
                 for i in range(depth)
             ],
         )
-        if pooling == "bilateral_flatten":
+        if pooling == "bilateral_flatten" and mode == "classifier":
             head_dim = dim * 2
         else:
             head_dim = dim
@@ -670,14 +670,16 @@ class VisionLSTM2(nn.Module):
 
         # head
         if mode == "features":
-            assert self.output_shape is None
+            if self.output_shape is not None:
+                warnings.warn(f"passed mode=features -> output_shape is ignored ({self.output_shape})")
             self.head = None
             if self.pooling is None:
                 self.output_shape = (self.patch_embed.num_patches, dim)
             elif self.pooling == "to_image":
                 self.output_shape = (dim, *self.patch_embed.seqlens)
             else:
-                raise NotImplementedError(f"invalid pooling '{pooling}' for mode '{mode}'")
+                warnings.warn(f"passed invalid pooling -> pooling is ignored ({self.pooling})")
+                self.pooling = None
         elif mode == "classifier":
             # linear classification head
             assert self.output_shape is not None and len(self.output_shape) == 1, \
@@ -694,6 +696,14 @@ class VisionLSTM2(nn.Module):
         old_pos_embed = state_dict["pos_embed.embed"]
         if old_pos_embed.shape != self.pos_embed.embed.shape:
             state_dict["pos_embed.embed"] = interpolate_sincos(embed=old_pos_embed, seqlens=self.pos_embed.seqlens)
+        # remove head and adapt layernorm for feature extraction
+        if self.mode == "features":
+            state_dict.pop("head.weight", None)
+            state_dict.pop("head.bias", None)
+            # legacy_norm uses head dim (is doubled for bilateral_concat) -> not usable for feature extraction
+            cur_sd = self.state_dict()
+            state_dict["legacy_norm.weight"] = cur_sd["legacy_norm.weight"]
+            state_dict["legacy_norm.bias"] = cur_sd["legacy_norm.bias"]
         return super().load_state_dict(state_dict=state_dict, strict=strict)
 
     @torch.jit.ignore

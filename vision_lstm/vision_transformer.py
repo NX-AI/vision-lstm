@@ -19,6 +19,7 @@ class VisionTransformer(nn.Module):
             num_cls_tokens=1,
             layerscale=1e-4,
             num_outputs=1000,
+            mode="classifier",
             eps=1e-6,
             **kwargs,
     ):
@@ -33,6 +34,7 @@ class VisionTransformer(nn.Module):
         self.input_shape = input_shape
         self.drop_path_rate = drop_path_rate
         self.drop_path_decay = drop_path_decay
+        self.mode = mode
         self.eps = eps
 
         # initialize patch_embed
@@ -68,10 +70,17 @@ class VisionTransformer(nn.Module):
             )
             for i in range(depth)
         ])
-        self.head = nn.Sequential(
-            nn.LayerNorm(dim, eps=eps),
-            nn.Linear(dim, num_outputs),
-        )
+        if mode == "features":
+            self.head = nn.Sequential(
+                nn.LayerNorm(dim, eps=eps),
+            )
+        elif mode == "classifier":
+            self.head = nn.Sequential(
+                nn.LayerNorm(dim, eps=eps),
+                nn.Linear(dim, num_outputs),
+            )
+        else:
+            raise NotImplementedError
 
         self.output_shape = (self.patch_embed.num_patches + self.cls_tokens.num_tokens, dim)
 
@@ -80,6 +89,9 @@ class VisionTransformer(nn.Module):
         old_pos_embed = state_dict["pos_embed.embed"]
         if old_pos_embed.shape != self.pos_embed.embed.shape:
             state_dict["pos_embed.embed"] = interpolate_sincos(embed=old_pos_embed, seqlens=self.pos_embed.seqlens)
+        if self.mode == "features":
+            state_dict.pop("head.1.weight", None)
+            state_dict.pop("head.1.bias", None)
         return super().load_state_dict(state_dict=state_dict, strict=strict)
 
     def forward(self, x):
@@ -95,5 +107,10 @@ class VisionTransformer(nn.Module):
         for blk in self.blocks:
             x = blk(x)
         # last norm
-        x = self.head(x[:, 0])
+        if self.mode == "features":
+            x = self.head(x)
+        elif self.mode == "classifier":
+            x = self.head(x[:, 0])
+        else:
+            raise NotImplementedError
         return x
