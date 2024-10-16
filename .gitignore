@@ -5,6 +5,7 @@
 *.JPEG
 *.mp4
 *.pdf
+scratch*
 
 yamls_run/
 temp/

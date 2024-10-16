@@ -361,7 +361,9 @@ class ViLLayer(nn.Module):
             conv_bias=True,
             conv_kernel_size=4,
             conv_kind="2d",
+            init_weights="original",
             seqlens=None,
+            num_blocks=None,
     ):
         super().__init__()
         assert dim % qkv_block_size == 0
@@ -373,6 +375,8 @@ class ViLLayer(nn.Module):
         self.conv_bias = conv_bias
         self.conv_kernel_size = conv_kernel_size
         self.conv_kind = conv_kind
+        self.init_weights = init_weights
+        self.num_blocks = num_blocks
 
         inner_dim = expansion * dim
         num_heads = inner_dim // qkv_block_size
@@ -477,7 +481,12 @@ class ViLLayer(nn.Module):
         if self.proj_up.bias is not None:
             nn.init.zeros_(self.proj_up.bias)
         # init outproj (original mLSTM uses num_blocks=1)
-        wang_init_(self.proj_down.weight, dim=self.dim, num_blocks=1)
+        if self.init_weights == "original":
+            wang_init_(self.proj_down.weight, dim=self.dim, num_blocks=1)
+        elif self.init_weights == "original-fixed":
+            wang_init_(self.proj_down.weight, dim=self.dim, num_blocks=self.num_blocks)
+        else:
+            raise NotImplementedError
         if self.proj_down.bias is not None:
             nn.init.zeros_(self.proj_down.bias)
 
@@ -507,6 +516,8 @@ class ViLBlock(nn.Module):
             proj_bias=True,
             norm_bias=True,
             seqlens=None,
+            num_blocks=None,
+            init_weights="original",
     ):
         super().__init__()
         self.dim = dim
@@ -514,6 +525,7 @@ class ViLBlock(nn.Module):
         self.drop_path = drop_path
         self.conv_kind = conv_kind
         self.conv_kernel_size = conv_kernel_size
+        self.init_weights = init_weights
 
         self.drop_path = DropPath(drop_prob=drop_path)
         self.norm = LayerNorm(ndim=dim, weight=True, bias=norm_bias)
@@ -525,6 +537,8 @@ class ViLBlock(nn.Module):
             seqlens=seqlens,
             norm_bias=norm_bias,
             proj_bias=proj_bias,
+            num_blocks=num_blocks,
+            init_weights=init_weights,
         )
 
         self.reset_parameters()
@@ -553,6 +567,8 @@ class ViLBlockPair(nn.Module):
             proj_bias=True,
             norm_bias=True,
             seqlens=None,
+            num_blocks=None,
+            init_weights="original",
     ):
         super().__init__()
         self.rowwise_from_top_left = ViLBlock(
@@ -563,7 +579,9 @@ class ViLBlockPair(nn.Module):
             conv_kernel_size=conv_kernel_size,
             proj_bias=proj_bias,
             norm_bias=norm_bias,
-            seqlens=seqlens
+            seqlens=seqlens,
+            num_blocks=num_blocks,
+            init_weights=init_weights,
         )
         self.rowwise_from_bot_right = ViLBlock(
             dim=dim,
@@ -573,7 +591,9 @@ class ViLBlockPair(nn.Module):
             conv_kernel_size=conv_kernel_size,
             proj_bias=proj_bias,
             norm_bias=norm_bias,
-            seqlens=seqlens
+            seqlens=seqlens,
+            num_blocks=num_blocks,
+            init_weights=init_weights,
         )
 
     def forward(self, x):
@@ -600,6 +620,7 @@ class VisionLSTM2(nn.Module):
             conv_kernel_size=3,
             proj_bias=True,
             norm_bias=True,
+            init_weights="original",
     ):
         if depth == 24 and dim < 1024:
             warnings.warn(
@@ -623,6 +644,7 @@ class VisionLSTM2(nn.Module):
         self.conv_kernel_size = conv_kernel_size
         self.proj_bias = proj_bias
         self.norm_bias = norm_bias
+        self.init_weights = init_weights
 
         # initialize patch_embed
         self.patch_embed = VitPatchEmbed(
@@ -653,6 +675,8 @@ class VisionLSTM2(nn.Module):
                     seqlens=self.patch_embed.seqlens,
                     proj_bias=proj_bias,
                     norm_bias=norm_bias,
+                    num_blocks=depth * 2,
+                    init_weights=init_weights,
                 )
                 for i in range(depth)
             ],
