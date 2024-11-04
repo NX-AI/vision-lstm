@@ -1,4 +1,4 @@
-# This file is licensed under AGPL-3.0
+# This file is licensed under Apache-2.0
 # Copyright (c) NXAI GmbH and its affiliates 2024
 # Korbininan Pöppel
 import torch

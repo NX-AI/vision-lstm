@@ -15,7 +15,7 @@ Pytorch implementation and pre-trained models of Vision-LSTM (ViL), an adaption 
 ## License
 
 This project is licensed under the [MIT](https://github.com/NX-AI/vision-lstm?tab=MIT-2-ov-file) License, except the following folders/files, 
-which are licensed under the [AGPL-3.0](https://github.com/NX-AI/vision-lstm?tab=AGPL-3.0-1-ov-file) license:
+which are licensed under the [Apache-2.0](https://github.com/NX-AI/vision-lstm?tab=Apache-2.0-2-ov-file) license:
 - src/vislstm/modules/xlstm
 - vision_lstm/vision_lstm.py
 - vision_lstm/vision_lstm2.py
