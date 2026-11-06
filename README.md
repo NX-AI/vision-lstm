@@ -157,10 +157,14 @@ VTAB-1K evaluations were conducted with [this](https://github.com/BenediktAlkin/
 If you like our work, please consider giving it a star :star: and cite us
 
 ```
-@article{alkin2024visionlstm,
-  title={{Vision-LSTM}: {xLSTM} as Generic Vision Backbone},
-  author={Benedikt Alkin and Maximilian Beck and Korbinian P{\"o}ppel and Sepp Hochreiter and Johannes Brandstetter},
-  journal={arXiv preprint arXiv:2406.04303},
-  year={2024}
+@inproceedings{alkin2024visionlstm,
+  title     = {{Vision-LSTM}: {xLSTM} as Generic Vision Backbone},
+  author    = {Alkin, Benedikt and Beck, Maximilian and P{\"o}ppel, Korbinian and Hochreiter, Sepp and Brandstetter, Johannes},
+  booktitle = {International Conference on Learning Representations},
+  year      = {2025},
+  eprint    = {2406.04303},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CV},
+  url       = {https://arxiv.org/abs/2406.04303}
 }
 ```
